@@ -74,45 +74,104 @@ export class CloudWanCore extends cdk.Stack {
 			requireAttachmentAcceptance: false,
 		})
 
-		// add attachment policys by Tag to the segments
-		this.redSegment.addSimpleAttachmentPolicy({
-			ruleNumber: 100,
-		});
-		  
-		this.greenSegment.addSimpleAttachmentPolicy({
-			ruleNumber: 200,
-		})
-		  
-		this.blueSegment.addSimpleAttachmentPolicy({
-			ruleNumber: 300,
-		})
-		
-		
 
-		// add sharing actions to the segments
-		this.redSegment.addSimpleShareAction({
-			description: 'Share the red segment with everything',
+		this.redSegment.addAttachmentPolicy({
+			ruleNumber: 100,
+			conditionLogic: raindancersNetwork.ConditionLogic.AND,
+			conditions: [
+			  {
+				type: raindancersNetwork.AttachmentCondition.TAG_VALUE,
+				key: 'NetworkSegment',
+				value: 'red',
+				operator: raindancersNetwork.Operators.EQUALS,
+			  },
+			  {
+				type: raindancersNetwork.AttachmentCondition.ACCOUNT_ID,
+				value: this.node.tryGetContext('networkAccount'), //network account
+				operator: raindancersNetwork.Operators.EQUALS,
+			  },
+			],
+			action: {
+			  associationMethod: raindancersNetwork.AssociationMethod.CONSTANT,
+			  segment: 'red',
+			},
+		  });
+
+		  this.greenSegment.addAttachmentPolicy({
+			ruleNumber: 200,
+			conditionLogic: raindancersNetwork.ConditionLogic.AND,
+			conditions: [
+			  {
+				type: raindancersNetwork.AttachmentCondition.TAG_VALUE,
+				key: 'NetworkSegment',
+				value: 'green',
+				operator: raindancersNetwork.Operators.EQUALS,
+			  },
+			  {
+				type: raindancersNetwork.AttachmentCondition.ACCOUNT_ID,
+				value: this.node.tryGetContext('networkAccount'), //network account
+				operator: raindancersNetwork.Operators.EQUALS,
+			  },
+			],
+			action: {
+			  associationMethod: raindancersNetwork.AssociationMethod.CONSTANT,
+			  segment: 'green',
+			},
+		  });
+
+		  this.blueSegment.addAttachmentPolicy({
+			ruleNumber: 300,
+			conditionLogic: raindancersNetwork.ConditionLogic.AND,
+			conditions: [
+			  {
+				type: raindancersNetwork.AttachmentCondition.TAG_VALUE,
+				key: 'NetworkSegment',
+				value: 'blue',
+				operator: raindancersNetwork.Operators.EQUALS,
+			  },
+			  {
+				type: raindancersNetwork.AttachmentCondition.ACCOUNT_ID,
+				value: this.node.tryGetContext('networkAccount'), //network account
+				operator: raindancersNetwork.Operators.EQUALS,
+			  },
+			],
+			action: {
+			  associationMethod: raindancersNetwork.AssociationMethod.CONSTANT,
+			  segment: 'blue',
+			},
+		  });
+
+		  this.redSegment.addSegmentAction({
+			description: 'sharetocommonservices',
+			action: raindancersNetwork.SegmentActionType.SHARE,
+			mode: raindancersNetwork.SegmentActionMode.ATTACHMENT_ROUTE,
 			shareWith: '*'
 		  });
-		  
-		this.greenSegment.addSimpleShareAction({
-			description: 'Share the green segment with the redSegment',
-			shareWith: [this.redSegment]
-		});
-		  
-		this.blueSegment.addSimpleShareAction({
-			description: 'Share the blue segment with the redSegment',
-			shareWith: [this.redSegment]
-		});
 
-		this.corenetwork.updatePolicy();
+		  
+
+		  this.blueSegment.addSegmentAction({
+			description: 'sharetocommonservices',
+			action: raindancersNetwork.SegmentActionType.SHARE,
+			mode: raindancersNetwork.SegmentActionMode.ATTACHMENT_ROUTE,
+			shareWith: [this.redSegment.segmentName]
+		  });
+
+		  this.greenSegment.addSegmentAction({
+			description: 'sharetocommonservices',
+			action: raindancersNetwork.SegmentActionType.SHARE,
+			mode: raindancersNetwork.SegmentActionMode.ATTACHMENT_ROUTE,
+			shareWith: [this.redSegment.segmentName]
+		  });
+		
+				this.corenetwork.updatePolicy();
 
 		// share the core network with the organisation
-		if (!(this.node.tryGetContext('sharingToPrincipal'))){
-			this.corenetwork.share({
-				allowExternalPrincipals: false,
-				principals: this.node.tryGetContext('sharingToPrincipal')
-			}); 
-		}
+		// if (!(this.node.tryGetContext('sharingToPrincipal'))){
+		// 	this.corenetwork.share({
+		// 		allowExternalPrincipals: false,
+		// 		principals: this.node.tryGetContext('sharingToPrincipal')
+		// 	}); 
+		// }
 	}
 }

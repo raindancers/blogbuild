@@ -17,12 +17,9 @@
     ]
   },
   "context": {
-    "networkAccount": "123456789000",
+    "networkAccount": "8xxxxxxxxxx",
 	  "region1": "ap-southeast-2",
 	  "region2": "ap-southeast-1",
-	  "sharingToPrincipal": [
-		"arn:aws:organizations::123456789000:organization/o-xxxxxxxxx"
-	  ],
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
