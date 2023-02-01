@@ -4,9 +4,7 @@ import {
 	aws_networkmanager as networkmanager,
 }
 from 'aws-cdk-lib';
-
 import * as raindancersNetwork from 'raindancers-network';
-
 
 export class CloudWanCore extends cdk.Stack {
 
@@ -19,7 +17,7 @@ export class CloudWanCore extends cdk.Stack {
 		super(scope, id, props);
 
 		// create the core network
-		const corenetwork = new raindancersNetwork.CoreNetwork(this, 'CoreNetwork', {
+		this.corenetwork = new raindancersNetwork.CoreNetwork(this, 'CoreNetwork', {
 			globalNetwork: new networkmanager.CfnGlobalNetwork(this, 'GlobalNetwork', {
 			  description: 'exampleNet',
 			}),
@@ -47,10 +45,6 @@ export class CloudWanCore extends cdk.Stack {
 			],
 		});
 
-		this.corenetwork = corenetwork
-
-
-
 
 		// Add segments to the core network
 		this.redSegment = this.corenetwork.addSegment({
@@ -74,104 +68,31 @@ export class CloudWanCore extends cdk.Stack {
 			requireAttachmentAcceptance: false,
 		})
 
-
-		this.redSegment.addAttachmentPolicy({
+		// add attachment policys by Tag to the segments
+		this.redSegment.addSimpleAttachmentPolicy({
 			ruleNumber: 100,
-			conditionLogic: raindancersNetwork.ConditionLogic.AND,
-			conditions: [
-			  {
-				type: raindancersNetwork.AttachmentCondition.TAG_VALUE,
-				key: 'NetworkSegment',
-				value: 'red',
-				operator: raindancersNetwork.Operators.EQUALS,
-			  },
-			  {
-				type: raindancersNetwork.AttachmentCondition.ACCOUNT_ID,
-				value: this.node.tryGetContext('networkAccount'), //network account
-				operator: raindancersNetwork.Operators.EQUALS,
-			  },
-			],
-			action: {
-			  associationMethod: raindancersNetwork.AssociationMethod.CONSTANT,
-			  segment: 'red',
-			},
-		  });
-
-		  this.greenSegment.addAttachmentPolicy({
+		});
+		this.greenSegment.addSimpleAttachmentPolicy({
 			ruleNumber: 200,
-			conditionLogic: raindancersNetwork.ConditionLogic.AND,
-			conditions: [
-			  {
-				type: raindancersNetwork.AttachmentCondition.TAG_VALUE,
-				key: 'NetworkSegment',
-				value: 'green',
-				operator: raindancersNetwork.Operators.EQUALS,
-			  },
-			  {
-				type: raindancersNetwork.AttachmentCondition.ACCOUNT_ID,
-				value: this.node.tryGetContext('networkAccount'), //network account
-				operator: raindancersNetwork.Operators.EQUALS,
-			  },
-			],
-			action: {
-			  associationMethod: raindancersNetwork.AssociationMethod.CONSTANT,
-			  segment: 'green',
-			},
-		  });
-
-		  this.blueSegment.addAttachmentPolicy({
+		})
+		this.blueSegment.addSimpleAttachmentPolicy({
 			ruleNumber: 300,
-			conditionLogic: raindancersNetwork.ConditionLogic.AND,
-			conditions: [
-			  {
-				type: raindancersNetwork.AttachmentCondition.TAG_VALUE,
-				key: 'NetworkSegment',
-				value: 'blue',
-				operator: raindancersNetwork.Operators.EQUALS,
-			  },
-			  {
-				type: raindancersNetwork.AttachmentCondition.ACCOUNT_ID,
-				value: this.node.tryGetContext('networkAccount'), //network account
-				operator: raindancersNetwork.Operators.EQUALS,
-			  },
-			],
-			action: {
-			  associationMethod: raindancersNetwork.AssociationMethod.CONSTANT,
-			  segment: 'blue',
-			},
-		  });
-
-		  this.redSegment.addSegmentAction({
-			description: 'sharetocommonservices',
-			action: raindancersNetwork.SegmentActionType.SHARE,
-			mode: raindancersNetwork.SegmentActionMode.ATTACHMENT_ROUTE,
-			shareWith: '*'
-		  });
-
-		  
-
-		  this.blueSegment.addSegmentAction({
-			description: 'sharetocommonservices',
-			action: raindancersNetwork.SegmentActionType.SHARE,
-			mode: raindancersNetwork.SegmentActionMode.ATTACHMENT_ROUTE,
-			shareWith: [this.redSegment.segmentName]
-		  });
-
-		  this.greenSegment.addSegmentAction({
-			description: 'sharetocommonservices',
-			action: raindancersNetwork.SegmentActionType.SHARE,
-			mode: raindancersNetwork.SegmentActionMode.ATTACHMENT_ROUTE,
-			shareWith: [this.redSegment.segmentName]
-		  });
+		})
 		
-				this.corenetwork.updatePolicy();
+		// add sharing actions to the segments
+		this.redSegment.addSimpleShareAction({
+			description: 'Share the red segment with everything',
+			shareWith: '*'
+		});
+		this.greenSegment.addSimpleShareAction({
+			description: 'Share the green segment with the redSegment',
+			shareWith: [this.redSegment]
+		});
+		this.blueSegment.addSimpleShareAction({
+			description: 'Share the blue segment with the redSegment',
+			shareWith: [this.redSegment]
+		});
 
-		// share the core network with the organisation
-		// if (!(this.node.tryGetContext('sharingToPrincipal'))){
-		// 	this.corenetwork.share({
-		// 		allowExternalPrincipals: false,
-		// 		principals: this.node.tryGetContext('sharingToPrincipal')
-		// 	}); 
-		// }
+		this.corenetwork.updatePolicy();
 	}
 }
