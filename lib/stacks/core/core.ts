@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import {
 	aws_networkmanager as networkmanager,
+	aws_s3 as s3,
 }
 from 'aws-cdk-lib';
 import * as raindancersNetwork from 'raindancers-network';
@@ -12,9 +13,11 @@ export class CloudWanCore extends cdk.Stack {
 	public readonly blueSegment: raindancersNetwork.CoreNetworkSegment
 	public readonly redSegment: raindancersNetwork.CoreNetworkSegment
 	public readonly greenSegment: raindancersNetwork.CoreNetworkSegment
+	
 
 	constructor(scope: Construct, id: string, props: cdk.StackProps) {
 		super(scope, id, props);
+
 
 		// create the core network
 		this.corenetwork = new raindancersNetwork.CoreNetwork(this, 'CoreNetwork', {

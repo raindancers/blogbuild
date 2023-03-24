@@ -17,7 +17,8 @@
     ]
   },
   "context": {
-    "networkAccount": "84799xxxxxxx",
+    "orgId": "o-28744tfriw",
+    "networkAccount": "847997321372",
 	  "region1": "ap-southeast-2",
 	  "region2": "ap-southeast-1",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
