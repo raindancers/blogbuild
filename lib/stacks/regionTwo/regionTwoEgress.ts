@@ -6,7 +6,7 @@ import {
 }
 from 'aws-cdk-lib';
 import * as network from 'raindancers-network';
-import { SharedServiceVpc } from '../../constructs/sharedServiceVpc';
+import { SharedServiceVpc } from '../../projectConstructs/sharedServiceVPC/sharedServiceVpc';
 
 interface RegionTwoProps extends cdk.StackProps {
 	/**

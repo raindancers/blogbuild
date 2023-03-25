@@ -5,20 +5,40 @@ import {
 }
 from 'aws-cdk-lib';
 import * as network from 'raindancers-network';
-import { WorkLoadVpc } from '../../constructs/workLoadVpc';
+import { WorkLoadVpc } from '../../projectConstructs/workloadVPC/workLoadVpc';
 
-interface RegionOneProps extends cdk.StackProps {
+interface RegionTwoProps extends cdk.StackProps {
+	/**
+	 * The coreNetwork the vpcs will be attached to
+	 */
 	corenetwork: network.CoreNetwork
+	/**
+	 * THe bluesegment of the coreNetwork
+	 */
 	blueSegment: network.CoreNetworkSegment
+	/**
+	 * the Green segment of the coreNetwork
+	 */
 	greenSegment: network.CoreNetworkSegment
+	/**
+	 * S3 bucket for Logging VPC flows
+	 */
 	loggingbucket: s3.Bucket
+	/**
+	 * the Central ACcount
+	 */
 	centralAccount:  network.CentralAccount,
+	/**
+	 * The Vpcs in which to associate Route53 Zones 
+	 */
 	remoteVpc: network.RemoteVpc[]
 }
 
-
-export class RegionOne extends cdk.Stack {
-	constructor(scope: Construct, id: string, props: RegionOneProps) {
+/** 
+ * A Stack that contains the WorkLoad VPCs and Worksloads in Region Two
+ */
+export class RegionTwo extends cdk.Stack {
+	constructor(scope: Construct, id: string, props: RegionTwoProps) {
 	  super(scope, id, props);
 		
 		/**  
@@ -47,7 +67,6 @@ export class RegionOne extends cdk.Stack {
 			loggingBucket: props.loggingbucket,
 			centralAccount:  props.centralAccount,
 			remoteVpc: props.remoteVpc
-		})
-		
+		})	
 	}
 }

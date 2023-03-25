@@ -5,7 +5,7 @@ import {
 }
 from 'aws-cdk-lib';
 import * as network from 'raindancers-network';
-import { WorkLoadVpc } from '../../constructs/workLoadVpc';
+import { WorkLoadVpc } from '../../projectConstructs/workloadVPC/workLoadVpc';
 
 interface RegionOneProps extends cdk.StackProps {
 	/**

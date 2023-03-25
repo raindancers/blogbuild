@@ -5,7 +5,7 @@ import {
 	aws_s3 as s3
 }
 from 'aws-cdk-lib';
-import { WebServer } from './webServer';
+import { WebServer } from '../webserver/webServer';
 import * as network from 'raindancers-network';
 
 export interface WorkLoadVpcProps {
