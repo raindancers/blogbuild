@@ -207,5 +207,7 @@ export class SharedServiceVpc extends constructs.Construct {
         orgId: this.node.tryGetContext("orgId"),
       }
     ).assnRole;
+
+    this.vpc = sharedServiceVpc.vpc
   }
 }

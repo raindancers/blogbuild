@@ -1,6 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import { CloudWanCore } from "../lib/stacks/core/clouwan";
-import { RegionOne } from "../lib/stacks/regionOne/regionTwoWorkLoads";
+import { RegionOne } from "../lib/stacks/regionOne/regionOneWorkLoads";
 import { RegionTwo } from "../lib/stacks/regionTwo/regionTwoWorkloads";
 import { RegionOneCentralVpc } from "../lib/stacks/regionOne/regionOneEgress";
 import { RegionTwoCentralVpc } from "../lib/stacks/regionTwo/regionTwoEgress";
@@ -79,7 +79,14 @@ new RegionTwo(app, "RegionTwoVPC", {
   greenSegment: core.greenSegment,
   blueSegment: core.blueSegment,
   loggingbucket: regionTwoEgress.loggingBucket,
-  centralAccount: app.node.tryGetContext("networkAccount"),
+  centralAccount: {
+    accountId: app.node.tryGetContext("networkAccount"),
+    roleArn: regionTwoEgress.resolverRole.roleArn
+  },
+  // export interface CentralAccount {
+  //   readonly accountId: string;
+  //   readonly roleArn: string;
+  // }
   remoteVpc: [
     {
       vpcId: regionOneEgress.centralVpcId,
@@ -90,4 +97,5 @@ new RegionTwo(app, "RegionTwoVPC", {
       vpcRegion: app.node.tryGetContext("region2"),
     },
   ],
+  crossRegionReferences: true,
 });

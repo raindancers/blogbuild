@@ -36,7 +36,7 @@ export class RegionOneCentralVpc extends cdk.Stack {
     super(scope, id, props);
 
     const redVpc = new SharedServiceVpc(this, "SharedServiceVPC", {
-      vpcCidr: "10.100.0.0./22",
+      vpcCidr: "10.100.0.0/22",
       vpcName: "red",
       corenetwork: props.corenetwork,
       connectToSegment: props.redSegment,

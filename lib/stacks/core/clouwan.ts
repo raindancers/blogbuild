@@ -6,6 +6,9 @@ import {
 import * as raindancersNetwork from "raindancers-network";
 
 export class CloudWanCore extends cdk.Stack {
+  /**
+   * The corenetwork that is created as part of this cloudwan
+   */
   public readonly corenetwork: raindancersNetwork.CoreNetwork;
   public readonly blueSegment: raindancersNetwork.CoreNetworkSegment;
   public readonly redSegment: raindancersNetwork.CoreNetworkSegment;

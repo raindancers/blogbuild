@@ -1,6 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { aws_s3 as s3 } from "aws-cdk-lib";
+import { aws_s3 as s3, Stack } from "aws-cdk-lib";
 import * as network from "raindancers-network";
 import { WorkLoadVpc } from "../../projectConstructs/workloadVPC/workLoadVpc";
 
@@ -47,7 +47,10 @@ export class RegionOne extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
+      region: this.region
     });
+
+
 
     /**
      * Create a VPC that is attached to the blue segment and contains a
@@ -61,6 +64,7 @@ export class RegionOne extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
+      region: this.region,
     });
   }
 }

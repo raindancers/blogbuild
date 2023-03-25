@@ -50,6 +50,7 @@ export class RegionTwo extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
+	  region: this.region,
     });
 
     /**
@@ -64,6 +65,7 @@ export class RegionTwo extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
+	  region: this.region,
     });
   }
 }

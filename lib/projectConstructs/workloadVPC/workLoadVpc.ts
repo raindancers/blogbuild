@@ -3,7 +3,7 @@ import * as constructs from "constructs";
 import { aws_ec2 as ec2, aws_s3 as s3 } from "aws-cdk-lib";
 import { WebServer } from "../webserver/webServer";
 import * as network from "raindancers-network";
-import { EnterpriseVpc } from "raindancers-network";
+//import { EnterpriseZone } from '../enterprizeZone/enterpriseZone'
 
 export interface WorkLoadVpcProps {
   /**
@@ -34,6 +34,10 @@ export interface WorkLoadVpcProps {
    * Vpcs where to associate this Vpcs Private Zone with.
    */
   readonly remoteVpc: network.RemoteVpc[];
+  /**
+   * region for creating the domain
+   */
+  readonly region: string;
 }
 
 /**
@@ -54,7 +58,7 @@ export class WorkLoadVpc extends constructs.Construct {
      * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.Vpc.html
      */
     //const vpc = new network.EnterpriseVpc(this, 'GreenEvpc', {
-    const vpc = new EnterpriseVpc(this, "GreenEvpc", {
+    const vpc = new network.EnterpriseVpc(this, "GreenEvpc", {
       vpc: new ec2.Vpc(this, `${props.vpcName}VPC`, {
         ipAddresses: ec2.IpAddresses.cidr(props.vpcCidr),
         maxAzs: 2,
@@ -106,7 +110,7 @@ export class WorkLoadVpc extends constructs.Construct {
     vpc.addRoutes({
       cidr: ["0.0.0.0/0"],
       description: "defaultroute",
-      subnetGroups: ["servers"],
+      subnetGroups: ["workloads"],
       destination: network.Destination.CLOUDWAN,
       cloudwanName: props.corenetwork.coreName,
     });
@@ -116,7 +120,9 @@ export class WorkLoadVpc extends constructs.Construct {
      * vpc.  in our case this will be our internal domain 'multicolour.cloud' and the amazonaws.com domain for endpoint services.
      */
     new network.AssociateSharedResolverRule(this, "r3rules", {
-      domainNames: ["multicolour.cloud", `${cdk.Aws.REGION}.amazonaws.com`],
+      domainNames: [
+        'multicolour.cloud',
+         `${props.region}.amazonaws.com`],
       vpc: vpc.vpc,
     });
 
@@ -125,7 +131,7 @@ export class WorkLoadVpc extends constructs.Construct {
      * cross vpc resolution across the cloudwan.
      */
     const vpcZone = new network.EnterpriseZone(this, "EnterpriseR53Zone", {
-      enterpriseDomainName: `${cdk.Aws.REGION}.${props.centralAccount}.multicolour.cloud`,
+      enterpriseDomainName: `${cdk.Aws.REGION}.${props.vpcName}.multicolour.cloud`,
       localVpc: vpc.vpc,
       remoteVpc: props.remoteVpc,
       centralAccount: props.centralAccount,
@@ -137,7 +143,7 @@ export class WorkLoadVpc extends constructs.Construct {
      */
     new WebServer(this, "Webserver", {
       vpc: vpc.vpc,
-      subnets: { subnetGroupName: "servers" },
+      subnets: { subnetGroupName: "workloads" },
       r53zone: vpcZone.privateZone,
       hostname: `${props.vpcName}`,
     });

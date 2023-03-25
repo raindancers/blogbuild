@@ -11,8 +11,6 @@ import {
 import * as cdk from "aws-cdk-lib";
 
 import * as constructs from "constructs";
-import { Values } from "aws-cdk-lib/aws-appsync";
-
 export interface RemoteVpc {
   readonly vpcId: string;
   readonly vpcRegion: string;
@@ -36,18 +34,12 @@ export interface EnterpriseZoneProps {
 export class EnterpriseZone extends constructs.Construct {
   public readonly privateZone: r53.PrivateHostedZone;
 
-  constructor(
-    scope: constructs.Construct,
-    id: string,
-    props: EnterpriseZoneProps
-  ) {
+  constructor(scope: constructs.Construct, id: string, props: EnterpriseZoneProps) {
     super(scope, id);
 
-    new cdk.CfnOutput(this, "blah", {
-      value: "blah",
-    });
+    new cdk.CfnOutput(this, 'domain', { value: props.enterpriseDomainName})
 
-    //create a private zone.
+    // create a private zone.
     this.privateZone = new r53.PrivateHostedZone(this, "privatezone", {
       zoneName: props.enterpriseDomainName,
       vpc: props.localVpc,
@@ -113,20 +105,20 @@ export class EnterpriseZone extends constructs.Construct {
         })
       );
 
-      //   const associateVPCCustomResources = new cdk.CustomResource(this, `${remoteVpc.vpcId}associateVPCcustomResources`, {
-      //     resourceType: 'Custom::AssociateInternalZone',
-      //     properties: {
-      //       ZoneId: this.privateZone.hostedZoneId, // this is the zone
-      //       VPCId: remoteVpc.vpcId,
-      //       VPCRegion: remoteVpc.vpcRegion,
-      //       CentralAccountRole: props.centralAccount.roleArn,
-      //     },
-      //     serviceToken: new cr.Provider(this, `${remoteVpc.vpcId}associateProvider`, {
-      //       onEventHandler: associateCentralVpcwithZone,
-      //     }).serviceToken,
-      //   });
+      const associateVPCCustomResources = new cdk.CustomResource(this, `${index}associateVPCcustomResources`, {
+        resourceType: 'Custom::AssociateInternalZone',
+        properties: {
+          ZoneId: this.privateZone.hostedZoneId, // this is the zone
+          VPCId: remoteVpc.vpcId,
+          VPCRegion: remoteVpc.vpcRegion,
+          CentralAccountRole: props.centralAccount.roleArn,
+        },
+        serviceToken: new cr.Provider(this, `${index}associateProvider`, {
+          onEventHandler: associateCentralVpcwithZone,
+        }).serviceToken,
+      });
 
-      // associateVPCCustomResources.node.addDependency(createAssn);
+      associateVPCCustomResources.node.addDependency(createAssn);
     });
   }
 }

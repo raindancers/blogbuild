@@ -14,12 +14,10 @@ To create a sample Cloudwan project, clone this repo locally.
 1. Open and Edit `\cdk.json`.  Modify lines 20-25 to reflect the regions, and account that you want to deploy to.  Optionally you can share your cloudwan if you want to share cloudwan via RAM.  In the following example, CDK will build a project that creats a cloud wan, in Singapore and Sydney, in account '12345678900', and will share it to the organisation o-123456789
 
 ```json
-"networkAccount": "123456789000",
+"orgId": "o-123345567",
+"networkAccount": "1234567890",
 "region1": "ap-southeast-2",
-"region2": "ap-southeast-1",
-"sharingToPrincipal": [
-	"arn:aws:organizations::123456789000:organization/o-123456789"
-],
+"region2": "ap-southeast-1"
 ```
 
 2. Install the project dependancies from package.json
