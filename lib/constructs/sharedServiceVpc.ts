@@ -11,11 +11,22 @@ from 'aws-cdk-lib';
 import * as network from 'raindancers-network';
 
 export interface SharedServiceVpcProps {
+	/**
+	 * The name for the VPC
+	 */
 	vpcName: string
+	/**
+	 * A cidr range for the Vpc
+	*/
 	vpcCidr: string
+	/**
+	 * The corenetwork which the VPC can be attached to.
+	 */
 	corenetwork: network.CoreNetwork,
+	/**
+	 * The Segment on which the coreNetwork Segment will be attached to. 
+	 */
 	connectToSegment: network.CoreNetworkSegment,
-	loggingBucket: s3.Bucket
 }
 
 /**
@@ -25,11 +36,26 @@ export interface SharedServiceVpcProps {
  */
 export class SharedServiceVpc extends constructs.Construct {
 
+	/**
+	 * the underlying Vpc for this Enteprise Vpc
+	 */
 	vpc: ec2.Vpc
+	/**
+	 * Iam Role which can be assumed to do cross account zone associations.
+	 */
 	resolverRole: iam.Role
+	/**
+	 * 
+	 */
+	loggingBucket: s3.Bucket
 
 	constructor(scope: constructs.Construct, id: string, props: SharedServiceVpcProps) {
 		super(scope, id)
+
+		this.loggingBucket = new s3.Bucket(this, 'loggingbucket', {
+			blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+			encryption: s3.BucketEncryption.S3_MANAGED,
+		})
 
 		// Assign some EIP's for the Nat Gateways.  Using EIP's means that the IP adress's of the 
 		// nat gateways will remain constant, if they are dropped and reployed.
@@ -103,7 +129,7 @@ export class SharedServiceVpc extends constructs.Construct {
 		// which will provide a convient way to search the logs. 
 
 		sharedServiceVpc.createFlowLog({
-			bucket: props.loggingBucket,
+			bucket: this.loggingBucket,
 			localAthenaQuerys: true,
 			oneMinuteFlowLogs: true,
 		});

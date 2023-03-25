@@ -1,31 +1,33 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { 
-	aws_networkmanager as networkmanager,
-	aws_ec2 as ec2,
 	aws_s3 as s3
 }
 from 'aws-cdk-lib';
 import * as network from 'raindancers-network';
-import { GreenVpc } from '../../region2/vpc/greenvpc';
-import { BlueVpc } from '../../region2/vpc/bluevpc';
+import { WorkLoadVpc } from '../../constructs/workLoadVpc';
 
-interface RegionTwoProps extends cdk.StackProps {
+interface RegionOneProps extends cdk.StackProps {
 	corenetwork: network.CoreNetwork
 	blueSegment: network.CoreNetworkSegment
-	redSegment: network.CoreNetworkSegment
 	greenSegment: network.CoreNetworkSegment
-	loggingbucket: s3.Bucket,
+	loggingbucket: s3.Bucket
 	centralAccount:  network.CentralAccount,
 	remoteVpc: network.RemoteVpc[]
 }
 
-export class RegionTwo extends cdk.Stack {
-	constructor(scope: Construct, id: string, props: RegionTwoProps) {
+
+export class RegionOne extends cdk.Stack {
+	constructor(scope: Construct, id: string, props: RegionOneProps) {
 	  super(scope, id, props);
 		
-		new GreenVpc(this, 'GreenVpc', {
+		/**  
+		 * Create a VPC that is attached to the green segment and contains a 
+		 * the webserver 'green.<region2>.multicolour.cloud'
+		 */ 
+		new WorkLoadVpc(this, 'GreenVpc', {
 			vpcCidr: '10.200.4.0/22',
+			vpcName: 'green',
 			corenetwork: props.corenetwork,
 			connectToSegment: props.greenSegment,
 			loggingBucket: props.loggingbucket,
@@ -33,8 +35,13 @@ export class RegionTwo extends cdk.Stack {
 			remoteVpc: props.remoteVpc
 		})
 
-		new BlueVpc(this, 'BlueVpc', {
+		/**  
+		 * Create a VPC that is attached to the blue segment and contains a 
+		 * the webserver 'blue.<region2>.multicolour.cloud'
+		 */ 
+		new WorkLoadVpc(this, 'BlueVpc', {
 			vpcCidr: '10.200.8.0/22',
+			vpcName: 'blue',
 			corenetwork: props.corenetwork,
 			connectToSegment: props.blueSegment,
 			loggingBucket: props.loggingbucket,

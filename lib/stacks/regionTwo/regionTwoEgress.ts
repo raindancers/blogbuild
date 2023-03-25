@@ -1,38 +1,54 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { 
-	aws_ec2 as ec2,
-	aws_s3 as s3
+	aws_s3 as s3,
+	aws_iam as iam
 }
 from 'aws-cdk-lib';
 import * as network from 'raindancers-network';
-import { RedVpc } from '../../region2/vpc/redvpc';
+import { SharedServiceVpc } from '../../constructs/sharedServiceVpc';
 
 interface RegionTwoProps extends cdk.StackProps {
-	corenetwork: network.CoreNetwork
-	redSegment: network.CoreNetworkSegment
-	
+	/**
+	 * the corenetwork that the vpc will be attached to
+	 */
+	readonly corenetwork: network.CoreNetwork
+	/**
+	 * Which segment of the CoreNetwork to attach the vpc to
+	 */
+	readonly redSegment: network.CoreNetworkSegment
 }
 
+/**
+ * Create a stack that contains a sharedserviceVPC
+ */
 export class RegionTwoCentralVpc extends cdk.Stack {
+	/**
+	 * The VPC logging bucket for the region
+	 */
 	loggingBucket: s3.Bucket
-	centralVpc: ec2.Vpc
+	/**
+	 * CentralVpcID
+	 */
+	centralVpcId: string
+	/**
+	 * Role to Assume for associating r53Zones
+	 */
+	resolverRole: iam.Role
 
-
-	constructor(scope: Construct, id: string, props: RegionTwoProps) {
+	constructor(scope: Construct, id: string, props: RegionOneProps) {
 	  super(scope, id, props);
 
-	  this.loggingBucket = new s3.Bucket(this, 'LoggingBucket', {
-		blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-		enforceSSL: true,
-	})
+	  const redVpc = new SharedServiceVpc(this, 'SharedServiceVPC', {
+		vpcCidr: '10.200.0.0./22',
+		vpcName: 'red',
+		corenetwork: props.corenetwork,
+		connectToSegment: props.redSegment,
 
-		this.centralVpc = new RedVpc(this, 'RedVpc', {
-			vpcCidr: '10.200.0.0/22',
-			corenetwork: props.corenetwork,
-			connectToSegment: props.redSegment,
-			loggingBucket: this.loggingBucket,
-		}).vpc
-		
+	  })
+	 		
+	  this.centralVpcId = redVpc.vpc.vpcId
+	  this.resolverRole = redVpc.resolverRole
+	  this.loggingBucket = redVpc.loggingBucket
 	}
 }
