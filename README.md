@@ -12,7 +12,7 @@ It needs to  maintain separation between different parts of its network for secu
 Multicolour has an IAC first policy, and its engineering team uses CDK with Typescript.
 
 
-## Breaking Down ( decomposing ) the problem with constructs: ##
+### Breaking Down ( decomposing ) the problem with constructs: ##
 
 From the diagram,  three major parts that we can break the problem into are;
 
@@ -34,9 +34,9 @@ Constructs are categorised Layer1 to Layer 3;
 
 In the solution that we present to solve the problem, we use all of these categories.  Some of the constructs we use are public and come from the ```aws-cdk-lib library```, others come from the ```raindancers-network``` construct which is published to constructs.dev, and some of the constructs are private to the project itself.
 
-## The Stacks ##
+### The Stacks 
 
-### The cloudWan Core Stack. ###
+#### The cloudWan Core Stack. ###
 
 AWS Cloud WAN, is a sophisticated network service that makes building an elastic multi region network with sophisticated policy reasonably simple, and on demand.  It is comprised of a number of configurable elements that we will need to deploy.  The  ‘interface’ that is provided natively by AWS for the service, are APIs which  expect an entire JSON document that describes all of these elements. While it is possible to build CloudWan this way,  there is considerable benefit in building a construct that presents Cloudwan as individual objects,  with appropriate methods and properties.   In the cloudwan Core Stack, we will use the raindancers-network library, which provides this feature.
 
@@ -50,7 +50,7 @@ Jumping directly to the code, we find all the elements required
 
 
 
-
+## Deployment ##
 
 ### Prerequites
 
@@ -91,3 +91,4 @@ To create a sample Cloudwan project, clone this repo locally.
 
   `cdk deploy RegionTwoVPC
 
+### Customization ###
