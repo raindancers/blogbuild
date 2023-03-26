@@ -6,6 +6,8 @@ A complete global network that spans multiple regions is a complex and potential
 Multicolour needs to deploy a global network to span two regions; Singapore and Sydney. 
 It needs to  maintain separation between different parts of its network for security purposes, however all parts of the network need full reachability and connectivity to the internet, and it needs to deploy a number of workloads in this network.  Multicolour solution architects have decided that AWS CloudWan will be a good fit to meet these requirements, and produced this diagram for engineering.
 
+![MulticolorDiagram](./docs/images/multicolour.jpg)
+
 
 Multicolour has an IAC first policy, and its engineering team uses CDK with Typescript.
 
