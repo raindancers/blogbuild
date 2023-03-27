@@ -47,7 +47,10 @@ Good *as code* allows the *code* serves two purposes. The obvious one is that it
 
 AWS Cloud WAN, is a sophisticated network service that makes building an elastic multi region network with sophisticated policy reasonably simple, and on demand.  It is comprised of a number of configurable elements that we will need to deploy.  The  ‘interface’ that is provided natively by AWS for the service, are APIs which  expect an entire JSON document that describes all of these elements. While it is possible to build CloudWan this way,  there is considerable benefit in building a construct that presents Cloudwan as individual objects,  with appropriate methods and properties.   In the cloudwan Core Stack, we will use the raindancers-network library, which provides this feature.
 
-<embed>[cloudwan.ts](./lib/stacks/core/clouwan.ts) defines the CloudWan that gets built.   
+[cloudwan.ts](./lib/stacks/core/clouwan.ts) defines the CloudWan that gets built.   
+
+<script src="https://gist.github.com/nisrulz/11c0d63428b108f10c83.js"></script>
+
 
 The class `CloudWanCore` defines a Global Network, in which our corenetwork will reside, we need to provide a few parameters for the core network, such as names, descriptions, asnRanges, and inside-cidr-ranges.  These follow the documented [`core-network-configuration`](https://docs.aws.amazon.com/network-manager/latest/cloudwan/cloudwan-policies-json.html) from the cloudwan documentation. The 'reach' of the cloudwan, is defined by adding regions to the cloudwan in the edgeLocations parameter. In this example, the regions are defined in cdk.json, so they can be easily modifyed in one place. 
 
