@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { aws_s3 as s3 } from "aws-cdk-lib";
 import * as network from "raindancers-network";
-import { WorkLoadVpc } from "../../projectConstructs/workloadVPC/workLoadVpc";
+import { WorkLoadVpc } from "../../applicaitonConstructs/workloadVPC/workLoadVpc";
 
 interface RegionTwoProps extends cdk.StackProps {
   /**

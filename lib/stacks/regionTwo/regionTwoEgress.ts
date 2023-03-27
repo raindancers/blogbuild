@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { aws_s3 as s3, aws_iam as iam } from "aws-cdk-lib";
 import * as network from "raindancers-network";
-import { SharedServiceVpc } from "../../projectConstructs/sharedServiceVPC/sharedServiceVpc";
+import { SharedServiceVpc } from "../../applicaitonConstructs/sharedServiceVPC/sharedServiceVpc";
 
 interface RegionTwoProps extends cdk.StackProps {
   /**
