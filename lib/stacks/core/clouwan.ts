@@ -7,10 +7,24 @@ import * as raindancersNetwork from "raindancers-network";
 
 /**
  * Creates a Global Network which contains a Cloudwan Core Network
+ * The class `CloudWanCore` defines a Global Network, in which the corenetwork is created. Parameters for the core network,
+ * such as names, descriptions, asnRanges, and inside-cidr-ranges.  These follow the documented [`core-network-configuration`](https://docs.aws.amazon.com/network-manager/latest/cloudwan/cloudwan-policies-json.html)
+ * from the cloudwan documentation. The 'reach' of the cloudwan, is defined by adding regions to the cloudwan in the edgeLocations parameter.
+ * In this example, the regions are defined in cdk.json, so they can be easily modifyed in one place. 
+ * CoreWan Segments are added to the Corewan using the method `.addsegment()`.  Red, Blue and Green Segments are added.  the .addsegment() method returns an instance of `CoreNetworkSegment`
+ * Each Segment needs an attachment policy. An attachment policy determines what is allowed to attach to the cloudwan. In this example, we use the .addSimpleAttachmentPolicy() method.
+ * 
+ * Segments also have actions. The .addSimpleShareAction() method shares the routes in one segment with another segment.
+ * The routes in the red segment shoudl be shared to everything. 
+ *  The routes in the green segment are shared with the red segment and the routes in the blue are shared with the red. 
+ * 
+ * Finally the .updatepolicy() method is used on the corenetwork. 
+ * This method, creates resources that bridge the gap between the singular JSON document that the API expects, and our code objects. 
+ * 
  */
 export class CloudWanCore extends cdk.Stack {
   /**
-   * The corenetwork that is created as part of this cloudwan
+   * The corenetwork that is created as part of this cloudwan. 
    */
   public readonly corenetwork: raindancersNetwork.CoreNetwork;
   /**
