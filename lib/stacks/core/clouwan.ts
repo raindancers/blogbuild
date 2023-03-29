@@ -78,6 +78,10 @@ export class CloudWanCore extends cdk.Stack {
           "inside-cidr-blocks": ["10.1.1.0/24"],
         },
       ],
+      // This is is an OptOut flag, which will not include backupVaults, and will S3 Buckets to be destroyed 
+      // when the Stacks/App are removed destroyed.  It is ** HIGHLY ** recommended that for a production environment
+      // that this property is removed. 
+      nonProduction: true,
     });
 
     // Add segments to the core network
