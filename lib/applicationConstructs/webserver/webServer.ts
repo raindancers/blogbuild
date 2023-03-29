@@ -58,7 +58,7 @@ export class WebServer extends constructs.Construct {
 
     // load userdata to execute on startup. This will install a NGINX webserver
     this.webserver.addUserData(
-      fs.readFileSync("./lib/projectConstructs/webserver/userdata/webserver-user-data.sh", "utf-8")
+      fs.readFileSync("./lib/applicationConstructs/webserver/userdata/webserver-user-data.sh", "utf-8")
     );
     // personalise the webserver, with an customised index
     this.webserver.addUserData(
