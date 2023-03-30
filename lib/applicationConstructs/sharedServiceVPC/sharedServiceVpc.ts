@@ -20,17 +20,25 @@ export interface SharedServiceVpcProps {
   /**
    * The corenetwork which the VPC can be attached to.
    */
-  corenetwork: network.CoreNetwork;
+  //corenetwork: network.CoreNetwork;
+  corenetwork: string;
   /**
    * The Segment on which the coreNetwork Segment will be attached to.
    */
-  connectToSegment: network.CoreNetworkSegment;
+  //connectToSegment: network.CoreNetworkSegment;
+  connectToSegment: string;
+
+  tableArn: string;
 }
 
 /**
- * This will create a VPC, that contains an Egress to the internet. THis can be used by all vpcs
- * It also contains a selection of endpoints.
- * This Vpc will span two Availablity Zones.
+ * 
+ * The construct creates
+ * A S3 bucket for logging VPC traffic, which will be used on a regional level for all the vpcs
+ * A VPC that has an Internet Gateway, and the NatGateways and subnets are defined. 
+ * Routes for the VPC and Cloudwan
+ * DNS Zones and Route Resolver Rules. 
+ * 
  */
 export class SharedServiceVpc extends constructs.Construct {
   /**
@@ -42,9 +50,10 @@ export class SharedServiceVpc extends constructs.Construct {
    */
   resolverRole: iam.Role;
   /**
-   *
+   * S3 Bucket is that is used for Centralised Logging
    */
   loggingBucket: s3.Bucket;
+  
 
   constructor(
     scope: constructs.Construct,
@@ -116,8 +125,8 @@ export class SharedServiceVpc extends constructs.Construct {
     // the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan
     // on a specfic segment. Remember that the cloudwan policy must allow the attachment.
     const attachmentId = sharedServiceVpc.attachToCloudWan({
-      coreNetworkName: props.corenetwork.coreName,
-      segmentName: props.connectToSegment.segmentName,
+      coreNetworkName: props.corenetwork,
+      segmentName: props.connectToSegment
     });
     // It is both good practice and often required by security policy to create flowlogs for the VPC which are
     // logged in a central S3 Bucket.  THis is a convience method to do this, and additionally create athena querys
@@ -145,11 +154,11 @@ export class SharedServiceVpc extends constructs.Construct {
     // In this network, we want all our cloudwan segments to be able to reach the internet, via our shared egress
 
     sharedServiceVpc.addCoreRoutes({
-      policyTableArn: props.corenetwork.policyTable.tableArn,
-      segments: ["red", "green", "blue"],
+      policyTableArn: props.tableArn,
+      segments: ["red", "green"],
       destinationCidrBlocks: ["0.0.0.0/0"],
       description: "defaultroutetoEgress",
-      coreName: props.corenetwork.coreName,
+      coreName: props.corenetwork,
       attachmentId: attachmentId,
     });
 
@@ -164,7 +173,7 @@ export class SharedServiceVpc extends constructs.Construct {
       description: "defaultroute",
       subnetGroups: ["linknet", "endpoints", "public"],
       destination: network.Destination.CLOUDWAN,
-      cloudwanName: props.corenetwork.coreName,
+      cloudwanName: props.corenetwork,
     });
 
     // We provide Route53 resolver endpoints, so that we can provide a consistent DNS resolution across the network.

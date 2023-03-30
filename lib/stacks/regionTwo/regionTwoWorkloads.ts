@@ -8,15 +8,15 @@ interface RegionTwoProps extends cdk.StackProps {
   /**
    * The coreNetwork the vpcs will be attached to
    */
-  corenetwork: network.CoreNetwork;
+  corenetwork: string;
   /**
    * THe bluesegment of the coreNetwork
    */
-  blueSegment: network.CoreNetworkSegment;
+  blueSegment: string;
   /**
    * the Green segment of the coreNetwork
    */
-  greenSegment: network.CoreNetworkSegment;
+  greenSegment: string;
   /**
    * S3 bucket for Logging VPC flows
    */

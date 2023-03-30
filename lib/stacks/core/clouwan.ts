@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import {
   aws_networkmanager as networkmanager,
+  aws_ssm as ssm,
 } from "aws-cdk-lib";
 import * as raindancersNetwork from "raindancers-network";
 
@@ -82,6 +83,14 @@ export class CloudWanCore extends cdk.Stack {
       // when the Stacks/App are removed destroyed.  It is ** HIGHLY ** recommended that for a production environment
       // that this property is removed. 
       nonProduction: true,
+    });
+
+    this.corenetwork.policyTable.tableArn
+
+    const emailParam = new ssm.StringParameter(this, 'policyTableArn', {
+      parameterName: '/policytable/databaseArn',
+      stringValue: this.corenetwork.policyTable.tableArn,
+      description: 'policyTable',
     });
 
     // Add segments to the core network

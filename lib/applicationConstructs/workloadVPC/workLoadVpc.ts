@@ -17,11 +17,11 @@ export interface WorkLoadVpcProps {
   /**
    * The cloudwan Corenetwork which the vpc will be attached to
    */
-  readonly corenetwork: network.CoreNetwork;
+  readonly corenetwork: string;
   /**
    * The coreWan Segment that the vpc will be attached to
    */
-  readonly connectToSegment: network.CoreNetworkSegment;
+  readonly connectToSegment: string;
   /**
    * A bucket for Logging
    */
@@ -87,8 +87,8 @@ export class WorkLoadVpc extends constructs.Construct {
      * on a specfic segment. Remember that the cloudwan policy must allow the attachment.
      */
     vpc.attachToCloudWan({
-      coreNetworkName: props.corenetwork.coreName,
-      segmentName: props.connectToSegment.segmentName,
+      coreNetworkName: props.corenetwork,
+      segmentName: props.connectToSegment,
     });
 
     /**  It is both good practice and often required by security policy to create flowlogs for the VPC which are
@@ -112,7 +112,7 @@ export class WorkLoadVpc extends constructs.Construct {
       description: "defaultroute",
       subnetGroups: ["workloads"],
       destination: network.Destination.CLOUDWAN,
-      cloudwanName: props.corenetwork.coreName,
+      cloudwanName: props.corenetwork,
     });
 
     /** This will associate the the routeresolver rules that where created in the shared services stack.
