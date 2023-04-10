@@ -8,7 +8,7 @@ exampleorg needs to deploy a global network to span two regions; Singapore and S
 - The green segment requires internet access, but the Blue segment must not.  The red segment must be able to reach all parts of the network. 
 - exampleorg solution architects have decided that AWS CloudWan will be a good fit to meet these requirements, and produced this diagram for engineering.
 
-![MulticolorDiagram](./docs/images/exampleorg.jpg)
+![MulticolorDiagram](./docs/images/multicolour.jpg)
 
 
 exampleorg has an IAC first policy, and its engineering team uses CDK with Typescript.
