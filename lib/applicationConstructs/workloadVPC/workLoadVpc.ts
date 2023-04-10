@@ -3,7 +3,7 @@ import * as constructs from "constructs";
 import { aws_ec2 as ec2, aws_s3 as s3 } from "aws-cdk-lib";
 import { WebServer } from "../webserver/webServer";
 import * as network from "raindancers-network";
-//import { EnterpriseZone } from '../enterprizeZone/enterpriseZone'
+
 
 export interface WorkLoadVpcProps {
   /**
@@ -17,11 +17,11 @@ export interface WorkLoadVpcProps {
   /**
    * The cloudwan Corenetwork which the vpc will be attached to
    */
-  readonly corenetwork: network.CoreNetwork;
+  readonly corenetwork: string;
   /**
    * The coreWan Segment that the vpc will be attached to
    */
-  readonly connectToSegment: network.CoreNetworkSegment;
+  readonly connectToSegment: string;
   /**
    * A bucket for Logging
    */
@@ -38,6 +38,10 @@ export interface WorkLoadVpcProps {
    * region for creating the domain
    */
   readonly region: string;
+  /**
+   * 
+   */
+  readonly crossRegionVpc: network.CrossRegionVpc[];
 }
 
 /**
@@ -86,9 +90,21 @@ export class WorkLoadVpc extends constructs.Construct {
      * the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan
      * on a specfic segment. Remember that the cloudwan policy must allow the attachment.
      */
+
+    const coreNetworkName = new network.CrossRegionParameterReader(this, 'coreNetworkName', {
+      region: 'us-east-1',
+      parameterName: props.corenetwork
+    })
+
+    const connectToSegmentName = new network.CrossRegionParameterReader(this, 'segmentName', {
+      region: 'us-east-1',
+      parameterName: props.connectToSegment,
+    })
+
+
     vpc.attachToCloudWan({
-      coreNetworkName: props.corenetwork.coreName,
-      segmentName: props.connectToSegment.segmentName,
+      coreNetworkName: coreNetworkName.parameterValue(),
+      segmentName: connectToSegmentName.parameterValue(),
     });
 
     /**  It is both good practice and often required by security policy to create flowlogs for the VPC which are
@@ -96,10 +112,19 @@ export class WorkLoadVpc extends constructs.Construct {
      * which will provide a convient way to search the logs.
      */
 
+    // DNS can and is commonly used as an 'out of band' data path for Malware command/control and Data Exfiltration attacks. 
+    // DNS firewall provides some protection against these attacks.
+    
+    //vpc.attachAWSManagedDNSFirewallRules();
+
+    // It is both good practice and often required by security policy to create flowlogs for the VPC which are
+    // logged in a central S3 Bucket.  THis is a convience method to do this, and additionally create athena querys
+    // which will provide a convient way to search the logs.
     vpc.createFlowLog({
       bucket: props.loggingBucket,
       localAthenaQuerys: true,
       oneMinuteFlowLogs: true,
+      
     });
 
     /** each subnet which is is member of the VPC, has its own routing table. ( this is the design of the ec2.Vpc ).
@@ -112,17 +137,18 @@ export class WorkLoadVpc extends constructs.Construct {
       description: "defaultroute",
       subnetGroups: ["workloads"],
       destination: network.Destination.CLOUDWAN,
-      cloudwanName: props.corenetwork.coreName,
+      cloudwanName: props.corenetwork
     });
 
     /** This will associate the the routeresolver rules that where created in the shared services stack.
      * This will direct DNS querys for the listed domains towards the route53 inbound resolvers in the shared services
-     * vpc.  in our case this will be our internal domain 'multicolour.cloud' and the amazonaws.com domain for endpoint services.
+     * vpc.  in our case this will be our internal domain 'exampleorg.cloud' and the amazonaws.com domain for endpoint services.
      */
     new network.AssociateSharedResolverRule(this, "r3rules", {
       domainNames: [
-        'multicolour.cloud',
-         `${props.region}.amazonaws.com`],
+        'exampleorg.cloud',
+        'amazonaws.com',
+      ],
       vpc: vpc.vpc,
     });
 
@@ -131,9 +157,10 @@ export class WorkLoadVpc extends constructs.Construct {
      * cross vpc resolution across the cloudwan.
      */
     const vpcZone = new network.EnterpriseZone(this, "EnterpriseR53Zone", {
-      enterpriseDomainName: `${cdk.Aws.REGION}.${props.vpcName}.multicolour.cloud`,
+      enterpriseDomainName: `${cdk.Aws.REGION}.${props.vpcName}.exampleorg.cloud`,
       localVpc: vpc.vpc,
       remoteVpc: props.remoteVpc,
+      crossRegionVpc: props.crossRegionVpc,
       centralAccount: props.centralAccount,
     });
 

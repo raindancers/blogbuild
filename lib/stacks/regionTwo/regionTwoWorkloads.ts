@@ -4,19 +4,20 @@ import { aws_s3 as s3 } from "aws-cdk-lib";
 import * as network from "raindancers-network";
 import { WorkLoadVpc } from "../../applicationConstructs/workloadVPC/workLoadVpc";
 
+
 interface RegionTwoProps extends cdk.StackProps {
   /**
    * The coreNetwork the vpcs will be attached to
    */
-  corenetwork: network.CoreNetwork;
+  corenetwork: string;
   /**
    * THe bluesegment of the coreNetwork
    */
-  blueSegment: network.CoreNetworkSegment;
+  blueSegment: string;
   /**
    * the Green segment of the coreNetwork
    */
-  greenSegment: network.CoreNetworkSegment;
+  greenSegment: string;
   /**
    * S3 bucket for Logging VPC flows
    */
@@ -29,6 +30,8 @@ interface RegionTwoProps extends cdk.StackProps {
    * The Vpcs in which to associate Route53 Zones
    */
   remoteVpc: network.RemoteVpc[];
+
+  crossRegionVpc: network.CrossRegionVpc[];
 }
 
 /**
@@ -40,7 +43,7 @@ export class RegionTwo extends cdk.Stack {
 
     /**
      * Create a VPC that is attached to the green segment and contains a
-     * the webserver 'green.<region2>.multicolour.cloud'
+     * the webserver 'green.<region2>.exampleorg.cloud'
      */
     new WorkLoadVpc(this, "GreenVpc", {
       vpcCidr: "10.200.4.0/22",
@@ -50,12 +53,13 @@ export class RegionTwo extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
-	  region: this.region,
+      crossRegionVpc: props.crossRegionVpc,
+	    region: this.region,
     });
 
     /**
      * Create a VPC that is attached to the blue segment and contains a
-     * the webserver 'blue.<region2>.multicolour.cloud'
+     * the webserver 'blue.<region2>.exampleorg.cloud'
      */
     new WorkLoadVpc(this, "BlueVpc", {
       vpcCidr: "10.200.8.0/22",
@@ -65,7 +69,8 @@ export class RegionTwo extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
-	  region: this.region,
+      crossRegionVpc: props.crossRegionVpc,
+	    region: this.region,
     });
   }
 }

@@ -41,8 +41,8 @@ export class WebServer extends constructs.Construct {
       vpcSubnets: props.subnets,
       instanceName: props.hostname,
       instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.M6A,
-        ec2.InstanceSize.MICRO
+        ec2.InstanceClass.T3,
+        ec2.InstanceSize.SMALL
       ),
       machineImage: new ec2.AmazonLinuxImage({
         generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,

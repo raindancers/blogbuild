@@ -16,7 +16,6 @@ const core = new CloudWanCore(app, "CloudwanCore", {
     account: app.node.tryGetContext("networkAccount"),
     region: "us-east-1",
   },
-  crossRegionReferences: true,
 });
 
 /**
@@ -27,19 +26,18 @@ const regionOneEgress = new RegionOneCentralVpc(app, "regionOneEgress", {
     account: app.node.tryGetContext("networkAccount"),
     region: app.node.tryGetContext("region1"),
   },
-  corenetwork: core.corenetwork,
-  redSegment: core.redSegment,
-  crossRegionReferences: true,
+  corenetwork: 'ExampleNet-corenetworkname',
+  redSegment: 'ExampleNet-redSegmentName',
 });
+
 // Create a central Service VPC in Region Two, and join it to the redSegment
-const regionTwoEgress = new RegionTwoCentralVpc(app, "regionThisEgress", {
+const regionTwoEgress = new RegionTwoCentralVpc(app, "regionTwoEgress", {
   env: {
     account: app.node.tryGetContext("networkAccount"),
     region: app.node.tryGetContext("region2"),
   },
-  corenetwork: core.corenetwork,
-  redSegment: core.redSegment,
-  crossRegionReferences: true,
+  corenetwork: 'ExampleNet-corenetworkname',
+  redSegment: 'ExampleNet-redSegmentName',
 });
 
 // Create VPC's in RegionOne, and add workloads to them.
@@ -48,9 +46,12 @@ new RegionOne(app, "RegionOneVPC", {
     account: app.node.tryGetContext("networkAccount"),
     region: app.node.tryGetContext("region1"),
   },
-  corenetwork: core.corenetwork,
-  greenSegment: core.greenSegment,
-  blueSegment: core.blueSegment,
+  corenetwork: 'ExampleNet-corenetworkname',
+  greenSegment: 'ExampleNet-greenSegmentName',
+  blueSegment: 'ExampleNet-blueSegmentName',
+
+
+
   loggingbucket: regionOneEgress.loggingBucket,
   centralAccount: {
     accountId: app.node.tryGetContext("networkAccount"),
@@ -61,12 +62,13 @@ new RegionOne(app, "RegionOneVPC", {
       vpcId: regionOneEgress.centralVpcId,
       vpcRegion: app.node.tryGetContext("region1"),
     },
+  ],
+  crossRegionVpc: [
     {
-      vpcId: regionTwoEgress.centralVpcId,
-      vpcRegion: app.node.tryGetContext("region2"),
+      vpcIdSSmParamter: `${app.node.tryGetContext("region2").replace(/-/g,'')}centralVpcId`,
+      vpcRegion: app.node.tryGetContext("region2")
     },
   ],
-  crossRegionReferences: true,
 });
 
 // Create VPC's in RegionTwo, and add workloads to them.
@@ -75,13 +77,13 @@ new RegionTwo(app, "RegionTwoVPC", {
     account: app.node.tryGetContext("networkAccount"),
     region: app.node.tryGetContext("region2"),
   },
-  corenetwork: core.corenetwork,
-  greenSegment: core.greenSegment,
-  blueSegment: core.blueSegment,
+  corenetwork: 'ExampleNet-corenetworkname',
+  greenSegment: 'ExampleNet-greenSegmentName',
+  blueSegment: 'ExampleNet-blueSegmentName',
   loggingbucket: regionTwoEgress.loggingBucket,
   centralAccount: {
     accountId: app.node.tryGetContext("networkAccount"),
-    roleArn: regionTwoEgress.resolverRole.roleArn
+    roleArn: regionTwoEgress.resolverRole.roleArn,
   },
   // export interface CentralAccount {
   //   readonly accountId: string;
@@ -89,13 +91,14 @@ new RegionTwo(app, "RegionTwoVPC", {
   // }
   remoteVpc: [
     {
-      vpcId: regionOneEgress.centralVpcId,
-      vpcRegion: app.node.tryGetContext("region1"),
-    },
-    {
       vpcId: regionTwoEgress.centralVpcId,
       vpcRegion: app.node.tryGetContext("region2"),
     },
   ],
-  crossRegionReferences: true,
+  crossRegionVpc: [
+    {
+      vpcIdSSmParamter: `${app.node.tryGetContext("region1").replace(/-/g,'')}centralVpcId`,
+      vpcRegion: app.node.tryGetContext("region1")
+    },
+  ],
 });

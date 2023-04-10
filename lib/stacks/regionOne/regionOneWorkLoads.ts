@@ -4,19 +4,20 @@ import { aws_s3 as s3, Stack } from "aws-cdk-lib";
 import * as network from "raindancers-network";
 import { WorkLoadVpc } from "../../applicationConstructs/workloadVPC/workLoadVpc";
 
+
 interface RegionOneProps extends cdk.StackProps {
   /**
    * The coreNetwork the vpcs will be attached to
    */
-  corenetwork: network.CoreNetwork;
+  corenetwork: string;
   /**
    * THe bluesegment of the coreNetwork
    */
-  blueSegment: network.CoreNetworkSegment;
+  blueSegment: string;
   /**
    * the Green segment of the coreNetwork
    */
-  greenSegment: network.CoreNetworkSegment;
+  greenSegment: string;
   /**
    * S3 bucket for Logging VPC flows
    */
@@ -29,6 +30,9 @@ interface RegionOneProps extends cdk.StackProps {
    * The Vpcs in which to associate Route53 Zones
    */
   remoteVpc: network.RemoteVpc[];
+
+  crossRegionVpc: network.CrossRegionVpc[];
+
 }
 
 export class RegionOne extends cdk.Stack {
@@ -37,7 +41,7 @@ export class RegionOne extends cdk.Stack {
 
     /**
      * Create a VPC that is attached to the green segment and contains a
-     * the webserver 'green.<region1>.multicolour.cloud'
+     * the webserver 'green.<region1>.exampleorg.cloud'
      */
     new WorkLoadVpc(this, "GreenVpc", {
       vpcCidr: "10.100.4.0/22",
@@ -47,6 +51,7 @@ export class RegionOne extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
+      crossRegionVpc: props.crossRegionVpc,
       region: this.region
     });
 
@@ -54,7 +59,7 @@ export class RegionOne extends cdk.Stack {
 
     /**
      * Create a VPC that is attached to the blue segment and contains a
-     * the webserver 'blue.<region1>.multicolour.cloud'
+     * the webserver 'blue.<region1>.exampleorg.cloud'
      */
     new WorkLoadVpc(this, "BlueVpc", {
       vpcCidr: "10.100.8.0/22",
@@ -64,6 +69,7 @@ export class RegionOne extends cdk.Stack {
       loggingBucket: props.loggingbucket,
       centralAccount: props.centralAccount,
       remoteVpc: props.remoteVpc,
+      crossRegionVpc: props.crossRegionVpc,
       region: this.region,
     });
   }

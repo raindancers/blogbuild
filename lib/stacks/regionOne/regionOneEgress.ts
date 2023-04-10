@@ -1,18 +1,17 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { aws_s3 as s3, aws_iam as iam } from "aws-cdk-lib";
-import * as network from "raindancers-network";
 import { SharedServiceVpc } from "../../applicationConstructs/sharedServiceVPC/sharedServiceVpc";
 
 interface RegionOneProps extends cdk.StackProps {
   /**
    * the corenetwork that the vpc will be attached to
    */
-  readonly corenetwork: network.CoreNetwork;
+  readonly corenetwork: string;
   /**
    * Which segment of the CoreNetwork to attach the vpc to
    */
-  readonly redSegment: network.CoreNetworkSegment;
+  readonly redSegment: string;
 }
 
 /**
@@ -40,6 +39,11 @@ export class RegionOneCentralVpc extends cdk.Stack {
       vpcName: "red",
       corenetwork: props.corenetwork,
       connectToSegment: props.redSegment,
+      region: this.node.tryGetContext("region1"),
+      // this is an opt-out flag, that should be removed if this stack is used for production 
+      // workloads.   Setting to true, will result in logs from vpc flow logs being deleted
+      // automatically when the stack is destroy.
+      nonproduction: true,
     });
 
     this.centralVpcId = redVpc.vpc.vpcId;

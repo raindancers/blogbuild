@@ -2,16 +2,16 @@
 
 A complete global network that spans multiple regions is a complex and potentially overwhelming problem,  if you attempt to consider all the details together.    By using  programmatic Infrastructure as code (IAC) and the concepts of decomposition and abstraction, we  take this complex problem and create a series of smaller parts that are easier to understand, program, and maintain.   Considerable operational improvements are obtained, using IAC;  full version control, audit and governance capability, pre and post deployment testing and  automated infrastructure deployment and management. These are transformational in an organisation. 
 
-## Multicolour.cloud - A simplistic, fictitious, global organisation.  ##
-Multicolour needs to deploy a global network to span two regions; Singapore and Sydney. 
+## exampleorg.cloud - A simplistic, fictitious, global organisation.  ##
+exampleorg needs to deploy a global network to span two regions; Singapore and Sydney. 
 - It needs to  maintain separation between different parts of its network for security purposes.
 - The green segment requires internet access, but the Blue segment must not.  The red segment must be able to reach all parts of the network. 
-- Multicolour solution architects have decided that AWS CloudWan will be a good fit to meet these requirements, and produced this diagram for engineering.
+- exampleorg solution architects have decided that AWS CloudWan will be a good fit to meet these requirements, and produced this diagram for engineering.
 
-![MulticolorDiagram](./docs/images/multicolour.jpg)
+![MulticolorDiagram](./docs/images/exampleorg.jpg)
 
 
-Multicolour has an IAC first policy, and its engineering team uses CDK with Typescript.
+exampleorg has an IAC first policy, and its engineering team uses CDK with Typescript.
 
 
 ### Breaking Down ( decomposing ) the problem with constructs: ##

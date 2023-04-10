@@ -3,7 +3,8 @@ import { Construct } from "constructs";
 import {
   aws_networkmanager as networkmanager,
 } from "aws-cdk-lib";
-import * as raindancersNetwork from "raindancers-network";
+import * as network from "raindancers-network";
+
 
 /**
  * Creates a Global Network which contains a Cloudwan Core Network
@@ -26,25 +27,25 @@ export class CloudWanCore extends cdk.Stack {
   /**
    * The corenetwork that is created as part of this cloudwan. 
    */
-  public readonly corenetwork: raindancersNetwork.CoreNetwork;
+  public readonly corenetwork: network.CoreNetwork;
   /**
    *  The blueSegment of the coreWan
    */
-  public readonly blueSegment: raindancersNetwork.CoreNetworkSegment;
+  public readonly blueSegment: network.CoreNetworkSegment;
   /**
    * the red Segment of the CoreWan
    */
-  public readonly redSegment: raindancersNetwork.CoreNetworkSegment;
+  public readonly redSegment: network.CoreNetworkSegment;
   /**
    * the greenSegment of the CoreWan
    */
-  public readonly greenSegment: raindancersNetwork.CoreNetworkSegment;
+  public readonly greenSegment: network.CoreNetworkSegment;
 
   constructor(scope: Construct, id: string, props: cdk.StackProps) {
     super(scope, id, props);
 
     // create the core network
-    this.corenetwork = new raindancersNetwork.CoreNetwork(this, "CoreNetwork", {
+    this.corenetwork = new network.CoreNetwork(this, "CoreNetwork", {
     
       // The core network is included inside a Global network. 
       globalNetwork: new networkmanager.CfnGlobalNetwork(
@@ -131,6 +132,42 @@ export class CloudWanCore extends cdk.Stack {
       shareWith: [this.redSegment],
     });
 
+
     this.corenetwork.updatePolicy();
+
+    
+    new network.CrossRegionParameterWriter(this, 'corenetworkname', {
+      value: this.corenetwork.coreName,
+      parameterName: 'ExampleNet-corenetworkname',
+      description: 'The name of the core network',
+    });
+
+    new network.CrossRegionParameterWriter(this, 'policyTablearn', {
+      value: this.corenetwork.policyTable.tableArn,
+      parameterName: 'ExampleNet-policyTableArn',
+      description: 'Policy Table Arn',
+    });
+
+    new network.CrossRegionParameterWriter(this, 'redSegmentName', {
+      value: this.redSegment.segmentName,
+      parameterName: 'ExampleNet-redSegmentName',
+      description: 'red segment name',
+    });
+
+    new network.CrossRegionParameterWriter(this, 'greenSegmentName', {
+      value: this.greenSegment.segmentName,
+      parameterName: 'ExampleNet-greenSegmentName',
+      description: 'green segment name',
+    });
+
+    new network.CrossRegionParameterWriter(this, 'blueSegmentName', {
+      value: this.blueSegment.segmentName,
+      parameterName: 'ExampleNet-blueSegmentName',
+      description: 'blue segment name',
+    });
+
+
+
+
   }
 }
