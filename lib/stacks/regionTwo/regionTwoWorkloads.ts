@@ -72,5 +72,5 @@ export class RegionTwo extends cdk.Stack {
       crossRegionVpc: props.crossRegionVpc,
 	    region: this.region,
     });
-  }
+  } 
 }

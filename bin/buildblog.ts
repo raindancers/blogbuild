@@ -71,7 +71,7 @@ new RegionOne(app, "RegionOneVPC", {
   ],
 });
 
-// Create VPC's in RegionTwo, and add workloads to them.
+//Create VPC's in RegionTwo, and add workloads to them.
 new RegionTwo(app, "RegionTwoVPC", {
   env: {
     account: app.node.tryGetContext("networkAccount"),
