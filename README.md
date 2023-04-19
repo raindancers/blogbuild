@@ -82,7 +82,7 @@ There are many familar parts to this construct, which were used in the creation 
 - CDK is installed ( Installation Instructions https://docs.aws.amazon.com/cdk/v2/guide/home.html  )
 - An AWS network account is avaiable for you to use. 
 - CDK Bootstrapping is done for the regions us-east-1, and the regions you want to deploy your cloudwan to.
-- Credentials that will allow you to assume the cdk deployment roles
+- A working aws-cli with a profile, that will will allow you to assume the cdk deployment roles.
 
 
 To create a sample Cloudwan project, clone this repo locally.
@@ -104,11 +104,16 @@ To create a sample Cloudwan project, clone this repo locally.
 3. Synth the project
 `cdk synth --profile <networkaccountprofile>`
 
-4. Deploy the stacks. ( this is a semi manual deployment process, without CI/CD)
+4. Deploy all the stacks together. ( this is a semi manual deployment process, without a pipeline, as it is an example project, however this will deploy in sequence as a single action across both regions.)
 
-- 4.1 First deploy the CoreWan, and let it complete. This could take as long as fifteen minutes
+`cdk deploy --all --require-approval never --profile <networkaccountprofile>`
+
+- 4.1 Alternatively you can deploy the stacks one at a time, This will give you the opportunity to build the network in pieces and observe what security changes are being made. 
   
-  `cdk deploy CloudwanCore`
+ ```
+ cdk ls
+ deploy CloudwanCore --profile <networkaccountprofile>
+ ```
 
 - 4.2 Deploy the VPC stacks, 
 
