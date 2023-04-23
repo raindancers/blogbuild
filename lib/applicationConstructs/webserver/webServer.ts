@@ -66,10 +66,17 @@ export class WebServer extends constructs.Construct {
     );
 
     // add a CName record for the webserver
-    new r53.CnameRecord(this, `CnameRecord`, {
+
+    new r53.ARecord(this, 'Arecord', {
       recordName: props.hostname,
       zone: props.r53zone,
-      domainName: this.webserver.instancePrivateDnsName,
-    });
+      target: r53.RecordTarget.fromIpAddresses(this.webserver.instancePrivateIp),
+    })
+    
+    // new r53.CnameRecord(this, `CnameRecord`, {
+    //   recordName: props.hostname,
+    //   zone: props.r53zone,
+    //   domainName: this.webserver.instancePrivateDnsName,
+    // });
   }
 }
