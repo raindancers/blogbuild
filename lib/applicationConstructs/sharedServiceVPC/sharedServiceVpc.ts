@@ -57,12 +57,12 @@ export class SharedServiceVpc extends constructs.Construct {
    */
   loggingBucket: s3.Bucket;
 
-  constructor(
-    scope: constructs.Construct,
-    id: string,
-    props: SharedServiceVpcProps
-  ) {
+  constructor(scope: constructs.Construct, id: string, props: SharedServiceVpcProps) {
     super(scope, id);
+
+    // We can optional flag that this is a non production environment. This will allow us to 
+    // delete s3 log objects when we destroy the stacks.  In a production environment protecting the 
+    // logs is important. 
 
     if ((props.nonproduction ?? false)) {     
 
@@ -82,7 +82,13 @@ export class SharedServiceVpc extends constructs.Construct {
     }
 
 
+    // Create an Enterprise Vpc.  This uses the 'EntepriseVpc' contruct from the raindancers-network library.
+    // the Construct extends the standard ec2.Vpc construct from aws-cdk-lib to provide multiple convience methods. 
+    // an attribute of the Enterprise VPC is .vpc, which allows compatiblitiy with all the classes and methods in aws-cdk-lib
+    // as it returns ec2.Vpc
 
+    
+    // Create some Natgateway Providers with EIP 
     // Assign some EIP's for the Nat Gateways.  Using EIP's means that the IP adress's of the
     // nat gateways will remain constant, if they are dropped and reployed.
 
@@ -90,7 +96,7 @@ export class SharedServiceVpc extends constructs.Construct {
     const eip2 = new ec2.CfnEIP(this, "EIP2forNatGateway");
 
     // in order to use the EIP's a Nat Provider is required. These
-    // these however are still however standard Nat Gateways.
+    // these however are still standard Nat Gateways.
     const natgateways = ec2.NatProvider.gateway({
       eipAllocationIds: [eip1.attrAllocationId, eip2.attrAllocationId],
     });
@@ -100,68 +106,33 @@ export class SharedServiceVpc extends constructs.Construct {
     new cdk.CfnOutput(this, "EIP1", { value: eip1.attrPublicIp });
     new cdk.CfnOutput(this, "EIP2", { value: eip2.attrPublicIp });
 
-    // Create an Enterprise Vpc.  This uses the 'EntepriseVpc' contruct from the raindancers-network library.
-    // the Construct essentially provides a way to provide additional methods on a vpc.
-    const sharedServiceVpc = new network.EnterpriseVpc(this, "redEvpc", {
-      // this vpc is the standard ec2.Vpc from the cdk-lib.  This allows you to form the
-      // vpc in many different ways.  For example you could use Ipam to provide the address space
-      // your self.  You could also import the Vpc.
-      // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.Vpc.html
 
-      vpc: new ec2.Vpc(this, "redvpc", {
+    // Define subnetGroups, for use in the enterprise VPC
+
+    const linknet = new network.SubnetGroup(this, 'linknet', {name: 'linknet', subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 26});
+    const outside = new network.SubnetGroup(this, 'outside', {name: 'outside', subnetType: ec2.SubnetType.PUBLIC, cidrMask: 28});
+    const endpoints = new network.SubnetGroup(this, 'endpoints', {name: 'endpoints', subnetType: ec2.SubnetType.PRIVATE_ISOLATED, cidrMask: 24});
+
+    // create the VPC, using the natgateways, and subnets 
+    const sharedServiceVpc = new network.EnterpriseVpc(this, "redEvpc", {
+
+      // this  EntepriseVpc extends the standard ec2.Vpc from the cdk-lib. 
+      evpc: {
         ipAddresses: ec2.IpAddresses.cidr(props.vpcCidr),
         maxAzs: 2,
         natGateways: 2,
         natGatewayProvider: natgateways,
         subnetConfiguration: [
-          // the linknet subnet is where the endpoints for connection to Cloudwan will be placed.
-          // by default the .attachmentToCloudwan method will look for the subnetGroupName 'linknet'.
-          // If you rename this, ensure you provide the alternative name in the method
-          {
-            name: "linknet",
-            cidrMask: 28,
-            subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-          },
-          // this subnetGroup will be where NatGateways are placed.
-          {
-            name: "public",
-            subnetType: ec2.SubnetType.PUBLIC,
-            cidrMask: 28,
-          },
-          // this subnet is where shared interface endpoints are placed.
-          {
-            name: "endpoints",
-            cidrMask: 24,
-            subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-          },
-        ],
-      }),
+          linknet.subnet,
+          outside.subnet,
+          endpoints.subnet,
+        ]
+      }
     });
 
-    new network.CrossRegionParameterWriter(this, 'vpcId', {
-      parameterName: `${props.region.replace(/-/g,'')}centralVpcId`,
-      value:  sharedServiceVpc.vpc.vpcId,
-      description: `${props.region} central Vpc Id`,
-    })
+    this.vpc = sharedServiceVpc.vpc;
 
-
-
-    const coreNetworkName = new network.CrossRegionParameterReader(this, 'coreNetworkName', {
-      region: 'us-east-1',
-      parameterName: props.corenetwork
-    })
-
-    const connectToSegmentName = new network.CrossRegionParameterReader(this, 'segmentName', {
-      region: 'us-east-1',
-      parameterName: props.connectToSegment,
-    })
-
-    // the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan
-    // on a specfic segment. Remember that the cloudwan policy must allow the attachment.
-    const attachmentId = sharedServiceVpc.attachToCloudWan({
-      coreNetworkName: coreNetworkName.parameterValue(),
-      segmentName: connectToSegmentName.parameterValue(),
-    });
+    
     // It is both good practice and often required by security policy to create flowlogs for the VPC which are
     // logged in a central S3 Bucket.  THis is a convience method to do this, and additionally create athena querys
     // which will provide a convient way to search the logs. 
@@ -172,26 +143,36 @@ export class SharedServiceVpc extends constructs.Construct {
       oneMinuteFlowLogs: true,
     });
 
+
+    // the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan
+    // on a specfic segment. Remember that the cloudwan policy must allow the attachment.
+    const attachmentId = sharedServiceVpc.attachToCloudWan({
+      coreNetworkName: props.corenetwork,
+      segmentName: props.connectToSegment
+    });
+
+
     // DNS can and is commonly used as an 'out of band' data path for Malware command/control and Data Exfiltration attacks. 
-    // DNS firewall provides some protection against these attacks.
+    // DNS firewall provides some protection against these attacks.  This method will turn on a set of Managed Rules to help mitigate this threat. 
+    // using AWS DNS Firewall.
 
     //sharedServiceVpc.attachAWSManagedDNSFirewallRules();
 
     // In this 'shared' service vpc, We add a selection of AWS service Endpoints, which
     // can be reached not only in this vpc, but the other vpcs that are attached to the cloudwan.
     // This can be helpful where a vpc needs infrequent to moderate access to a service. Consideration
-    // of the balance between the cost of the endpoint vs traffic charges needs to be made.
+    // of the balance between the cost of the endpoint vs traffic charges needs to be made. If there is heavy use of a service
+    // it may be more appropriate to add an endpoint in the vpc
 
-    new network.AwsServiceEndPoints(this, "AWSEndpoints", {
+    sharedServiceVpc.addServiceEndpoints({
       services: [ec2.InterfaceVpcEndpointAwsService.SSM],
-      subnetGroup: "endpoints",
-      vpc: sharedServiceVpc.vpc,
-      s3GatewayInterface: true,
-    });
+      subnetGroup: endpoints
+    })
 
-    // This method, will add Routes in the specifed Cloudwan Routing tables towards the Cloudwan Attachment for this Vpc.
+   
+
+     // This method, will add Routes in the specifed Cloudwan Routing tables towards the Cloudwan Attachment for this Vpc.
     // In this network, we want all our cloudwan segments to be able to reach the internet, via our shared egress
-
 
     const tableArn = new network.CrossRegionParameterReader(this, 'tableArn', {
       region: 'us-east-1',
@@ -207,64 +188,56 @@ export class SharedServiceVpc extends constructs.Construct {
       attachmentId: attachmentId,
     });
 
-    // each subnet which is is member of the VPC, has its own routing table. ( this is the design of the ec2.Vpc ).
-    // we need to add a route in the routing tables towards the cloudwan attachment, to that traffic can reach other vpcs
-    // This method allows for multiple cidr ranges to be added to multiple routing tables.  While in this example we set the destination
-    // as cloudwan, this .addRoutes() method, allows for easy routing to TransitGateways, and Firewalls.  It is AZ aware, and will route
-    // traffic so it does not cross AZ boundarys.
+
+
+    // each subnet in each SubnetGroup, have its own routing table, ( this comes from the design of the ec2.Vpc ).
+    // the .router() method provides a simple way to add add routes, in a 'route table' fashion. 
+    // we need to add a route in the routing tables towards the cloudwan attachment, to that traffic can reach other vpcs on the coreWan.
+    // NB. This method allows for multiple cidr ranges to be added to multiple routing tables.  While in this example we set the destination
+    // as cloudwan, this .router method, allows for easy routing to TransitGateways, and Firewalls.  It is AZ aware, and will route
+    // traffic so it does not cross AZ boundarys
+
+    sharedServiceVpc.router([
+      {
+        subnetGroup: linknet,
+        routes: [
+          { cidr: '10.0.0.0/8', destination: network.Destination.CLOUDWAN, description: 'linknetAllPrivateNetworks' }
+        ]
+      },
+      {
+        subnetGroup: endpoints,
+        routes: [
+          { cidr: '10.0.0.0/8', destination: network.Destination.CLOUDWAN, description: 'endpointsAllPrivateNetworks' }
+        ]
+      },
+      {
+        subnetGroup: outside,
+        routes: [
+          { cidr: '10.0.0.0/8', destination: network.Destination.CLOUDWAN, description: 'outsideAllPrivateNetworks' }
+        ]
+      },
+    ]);
+
+    // MultiRegion Hybrid DNS.
+
+    // The shared Service VPC's need to provide Route53 resolver endpoints, so that we can provide a consistent DNS resolution across the network.
+    // This forms part of the infrastructure that will allow hosts in different VPC's to resolve hosts in other VPC's by name.
+    sharedServiceVpc.addR53Resolvers(endpoints)
 
   
-    sharedServiceVpc.addRoutes({
-      cidr: ["10.0.0.0/8"],
-      description: "defaultroute",
-      subnetGroups: ["linknet", "endpoints", "public"],
-      destination: network.Destination.CLOUDWAN,
-      cloudwanName: props.corenetwork,
-    });
 
-    // We provide Route53 resolver endpoints, so that we can provide a consistent DNS resolution across the network.
-    // This forms part of the infrastructure that will allow hosts in different VPC's to resolve hosts in other VPC's by name.
-    const r53Resolvers = new network.R53Resolverendpoints(
-      this,
-      "RouteResolvers",
-      {
-        vpc: sharedServiceVpc.vpc,
-        subnetGroup: "endpoints",
-      }
-    );
-
-    // This vpc, will have have a a Private/Internal Route53 Zone created and associated with it.
-    new r53.PrivateHostedZone(this, "privatezone", {
-      zoneName: `${cdk.Aws.REGION}.${props.vpcName}.exampleorg.cloud`,
-      // the r53.PrivateHostedZone class expects a ec2.Vpc as a property. The sharedServiceVpc is of type 'EntepriseVpc'
-      // the EnterpriseVpc has a property (vpc) which we are able to access which is of type 'ec2.Vpc'
-      vpc: sharedServiceVpc.vpc,
-    });
-
-    // We want vpcs attached to the the Cloudwan, to be able to resolve each other. This class creates resolver rules which
-    // THese resolver rules will be shared to our AWS organisation, So, they can be assocated with each of the vpcs attached.
+    // We want vpcs attached to the the Cloudwan, to be able to resolve the Zones of other vpcs. This method creates resolver rules which
+    // are shared  and these can be assocated with each of the vpcs attached.
     // We create and share a rule for 'amazonaws.com' so that the private interface endpoints names can be resolved to our private endpoints.
     // we create and share a rule for 'exampleorg.cloud' which is our internal domain name.
+    // this will also tag the vpc, so it can be found by spoke VPC.
 
-    new network.CentralResolverRules(this, "centralResolverRules", {
-      domains: [`amazonaws.com`, "exampleorg.cloud"],
-      resolvers: r53Resolvers,
-    });
+    sharedServiceVpc.addCentralResolverRules(
+      [
+        'amazonaws.com',
+        this.node.tryGetContext("domain"),
+      ],
+    )
 
-    // We need to provide a role, that has permissions to associate an internal Route53 zone with this VPC.  THis is used later, by
-    // a lambda that assosciates a zone associated with a vpc, to the central account as well.  The central VPC then can resolve every zone.
-
-    this.resolverRole = new network.CentralAccountAssnRole(
-      this,
-      "associationRole",
-      {
-        vpc: this.vpc,
-        orgId: this.node.tryGetContext("orgId"),
-        roleName: `r53assn${cdk.Aws.REGION}`
-      }
-    ).assnRole;
-  
-
-    this.vpc = sharedServiceVpc.vpc
   }
 } 

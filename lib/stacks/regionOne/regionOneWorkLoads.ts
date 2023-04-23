@@ -22,20 +22,10 @@ interface RegionOneProps extends cdk.StackProps {
    * S3 bucket for Logging VPC flows
    */
   loggingbucket: s3.Bucket;
-  /**
-   * the Central ACcount
-   */
-  centralAccount: network.CentralAccount;
-  /**
-   * The Vpcs in which to associate Route53 Zones
-   */
-  remoteVpc: network.RemoteVpc[];
-
-  crossRegionVpc: network.CrossRegionVpc[];
-
+  
 }
 
-export class RegionOne extends cdk.Stack {
+export class RegionOneWorkLoads extends cdk.Stack {
   constructor(scope: Construct, id: string, props: RegionOneProps) {
     super(scope, id, props);
 
@@ -49,9 +39,6 @@ export class RegionOne extends cdk.Stack {
       corenetwork: props.corenetwork,
       connectToSegment: props.greenSegment,
       loggingBucket: props.loggingbucket,
-      centralAccount: props.centralAccount,
-      remoteVpc: props.remoteVpc,
-      crossRegionVpc: props.crossRegionVpc,
       region: this.region
     });
 
@@ -67,9 +54,6 @@ export class RegionOne extends cdk.Stack {
       corenetwork: props.corenetwork,
       connectToSegment: props.blueSegment,
       loggingBucket: props.loggingbucket,
-      centralAccount: props.centralAccount,
-      remoteVpc: props.remoteVpc,
-      crossRegionVpc: props.crossRegionVpc,
       region: this.region,
     });
   }

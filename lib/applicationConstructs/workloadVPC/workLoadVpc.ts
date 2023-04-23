@@ -29,19 +29,14 @@ export interface WorkLoadVpcProps {
   /**
    * The sharedService account details, and role to assume
    */
-  readonly centralAccount: network.CentralAccount;
-  /**
-   * Vpcs where to associate this Vpcs Private Zone with.
-   */
-  readonly remoteVpc: network.RemoteVpc[];
   /**
    * region for creating the domain
    */
   readonly region: string;
   /**
-   * 
+   * otherregions for 
    */
-  readonly crossRegionVpc: network.CrossRegionVpc[];
+ 
 }
 
 /**
@@ -62,49 +57,20 @@ export class WorkLoadVpc extends constructs.Construct {
      * https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.Vpc.html
      */
     //const vpc = new network.EnterpriseVpc(this, 'GreenEvpc', {
-    const vpc = new network.EnterpriseVpc(this, "GreenEvpc", {
-      vpc: new ec2.Vpc(this, `${props.vpcName}VPC`, {
+
+    const linknet = new network.SubnetGroup(this, 'linknet', {name: 'linknet', subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 26});
+    const workloads = new network.SubnetGroup(this, 'workloads', {name: 'workloads', subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 28});
+
+    const vpc = new network.EnterpriseVpc(this, "WorkloadEvpc", {
+      evpc: {
         ipAddresses: ec2.IpAddresses.cidr(props.vpcCidr),
         maxAzs: 2,
         natGateways: 0,
         subnetConfiguration: [
-          // the linknet subnet is where the endpoints for connection to Cloudwan will be placed.
-          // by default the .attachmentToCloudwan method will look for the subnetGroupName 'linknet'.
-          // If you rename this, ensure you provide the alternative name in the method
-          {
-            name: "linknet",
-            cidrMask: 28,
-            subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-          },
-          // this subnet group will contain a some workloads
-          {
-            name: "workloads",
-            cidrMask: 24,
-            subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-          },
+          linknet.subnet,
+          workloads.subnet
         ],
-      }),
-    });
-
-    /**
-     * the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan
-     * on a specfic segment. Remember that the cloudwan policy must allow the attachment.
-     */
-
-    const coreNetworkName = new network.CrossRegionParameterReader(this, 'coreNetworkName', {
-      region: 'us-east-1',
-      parameterName: props.corenetwork
-    })
-
-    const connectToSegmentName = new network.CrossRegionParameterReader(this, 'segmentName', {
-      region: 'us-east-1',
-      parameterName: props.connectToSegment,
-    })
-
-
-    vpc.attachToCloudWan({
-      coreNetworkName: coreNetworkName.parameterValue(),
-      segmentName: connectToSegmentName.parameterValue(),
+      },
     });
 
     /**  It is both good practice and often required by security policy to create flowlogs for the VPC which are
@@ -112,33 +78,47 @@ export class WorkLoadVpc extends constructs.Construct {
      * which will provide a convient way to search the logs.
      */
 
-    // DNS can and is commonly used as an 'out of band' data path for Malware command/control and Data Exfiltration attacks. 
-    // DNS firewall provides some protection against these attacks.
-    
-    //vpc.attachAWSManagedDNSFirewallRules();
-
-    // It is both good practice and often required by security policy to create flowlogs for the VPC which are
-    // logged in a central S3 Bucket.  THis is a convience method to do this, and additionally create athena querys
-    // which will provide a convient way to search the logs.
     vpc.createFlowLog({
       bucket: props.loggingBucket,
       localAthenaQuerys: true,
       oneMinuteFlowLogs: true,
-      
     });
-
-    /** each subnet which is is member of the VPC, has its own routing table. ( this is the design of the ec2.Vpc ).
-     * we need to add a route in the routing tables towards the cloudwan attachment, to that traffic can reach other vpcs.
-     * Because this is the only path out of the VPC, we can simply add a default route.
+    
+    /**
+     * the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan
+     * on a specfic segment. Remember that the cloudwan policy must allow the attachment.
      */
 
-    vpc.addRoutes({
-      cidr: ["0.0.0.0/0"],
-      description: "defaultroute",
-      subnetGroups: ["workloads"],
-      destination: network.Destination.CLOUDWAN,
-      cloudwanName: props.corenetwork
+    vpc.attachToCloudWan({
+      coreNetworkName: props.corenetwork,
+      segmentName: props.connectToSegment,
     });
+
+    /**
+     * Because this vpc only has a cloudwan gateway, a single default route is 
+     * all that is required, for each subnets routing table.
+     */
+    vpc.router([
+      {
+        subnetGroup: linknet,
+        routes: [
+          { cidr: '0.0.0.0/0', destination: network.Destination.CLOUDWAN, description: 'Default Route' }
+        ]
+      },
+      {
+        subnetGroup: workloads,
+        routes: [
+          { cidr: '0.0.0.0/0', destination: network.Destination.CLOUDWAN, description: 'Default Route' }
+        ]
+      },
+    ]);    
+
+    // DNS can and is commonly used as an 'out of band' data path for Malware command/control and Data Exfiltration attacks. 
+    // DNS firewall provides some protection against these attacks.
+    
+    //vpc.attachAWSManagedDNSFirewallRules();
+    
+
 
     /** This will associate the the routeresolver rules that where created in the shared services stack.
      * This will direct DNS querys for the listed domains towards the route53 inbound resolvers in the shared services
@@ -156,13 +136,15 @@ export class WorkLoadVpc extends constructs.Construct {
      * Create a Local R53 Zone for this vpc, and additionally associate it with the central resolver vpcs, to allow
      * cross vpc resolution across the cloudwan.
      */
-    const vpcZone = new network.EnterpriseZone(this, "EnterpriseR53Zone", {
-      enterpriseDomainName: `${cdk.Aws.REGION}.${props.vpcName}.exampleorg.cloud`,
-      localVpc: vpc.vpc,
-      remoteVpc: props.remoteVpc,
-      crossRegionVpc: props.crossRegionVpc,
-      centralAccount: props.centralAccount,
-    });
+
+
+    const zone = vpc.createAndAttachR53EnterprizeZone({
+      domainname:  `${props.region}.${props.vpcName}.${this.node.tryGetContext("domain")}`,
+      hubVpcs: [
+        { region: this.node.tryGetContext("region1") },
+        { region: this.node.tryGetContext("region2") }
+      ],
+    });  
 
     /**
      * Create a Ec2 Instance that in the workloads segment
@@ -171,8 +153,9 @@ export class WorkLoadVpc extends constructs.Construct {
     new WebServer(this, "Webserver", {
       vpc: vpc.vpc,
       subnets: { subnetGroupName: "workloads" },
-      r53zone: vpcZone.privateZone,
+      r53zone: zone,
       hostname: `${props.vpcName}`,
     });
   }
 }
+
