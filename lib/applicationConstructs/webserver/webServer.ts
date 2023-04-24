@@ -65,6 +65,8 @@ export class WebServer extends constructs.Construct {
       `echo "<h1>This is ${props.hostname}.${props.r53zone.zoneName}</h1>" > /usr/share/nginx/html/index.html`
     );
 
+    this.webserver.addUserData(`sudo hostnamectl set-hostname ${props.hostname}.${props.r53zone.zoneName}`)
+
     // add an A record for the webserver
     new r53.ARecord(this, 'Arecord', {
       recordName: props.hostname,

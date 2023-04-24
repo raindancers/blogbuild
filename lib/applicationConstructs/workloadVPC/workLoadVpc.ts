@@ -130,7 +130,7 @@ export class WorkLoadVpc extends constructs.Construct {
     });
 
     /**
-     * Create a Ec2 Instance that in the workloads segment
+     * Create a Ec2 Instance in the workloads segment
      *
      */
     new WebServer(this, "Webserver", {
