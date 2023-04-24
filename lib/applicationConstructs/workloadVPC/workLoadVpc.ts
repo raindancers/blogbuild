@@ -48,14 +48,14 @@ export class WorkLoadVpc extends constructs.Construct {
     const linknet = new network.SubnetGroup(this, "linknet", {
       name: "linknet",
       subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      cidrMask: 28,
+      cidrMask: 26,
     });
 
     // subnets for the internal webservers.
     const workloads = new network.SubnetGroup(this, "workloads", {
       name: "workloads",
       subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      cidrMask: 26,
+      cidrMask: 28,
     });
 
     // create the vpc.
