@@ -65,18 +65,11 @@ export class WebServer extends constructs.Construct {
       `echo "<h1>This is ${props.hostname}.${props.r53zone.zoneName}</h1>" > /usr/share/nginx/html/index.html`
     );
 
-    // add a CName record for the webserver
-
+    // add an A record for the webserver
     new r53.ARecord(this, 'Arecord', {
       recordName: props.hostname,
       zone: props.r53zone,
       target: r53.RecordTarget.fromIpAddresses(this.webserver.instancePrivateIp),
     })
-    
-    // new r53.CnameRecord(this, `CnameRecord`, {
-    //   recordName: props.hostname,
-    //   zone: props.r53zone,
-    //   domainName: this.webserver.instancePrivateDnsName,
-    // });
   }
 }

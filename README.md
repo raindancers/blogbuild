@@ -3,7 +3,7 @@
 A complete global network that spans multiple regions is a complex and potentially overwhelming problem,  if you attempt to consider all the details together.    By using  programmatic Infrastructure as code (IAC) and the concepts of decomposition and abstraction, we  take this complex problem and create a series of smaller parts that are easier to understand, program, and maintain.   Considerable operational improvements are obtained, using IAC;  full version control, audit and governance capability, pre and post deployment testing and  automated infrastructure deployment and management. These are transformational in an organisation. 
 
 ## exampleorg.cloud - A simplistic, fictitious, global organisation.  ##
-exampleorg needs to deploy a global network to span two regions; Singapore and Sydney. 
+exampleorg needs to deploy a global network to span two regions; In this example, Singapore and Sydney. ( it could be two ore more in any region) 
 - It needs to  maintain separation between different parts of its network for security purposes.
 - The green segment requires internet access, but the Blue segment must not.  The red segment must be able to reach all parts of the network. 
 - exampleorg solution architects have decided that AWS CloudWan will be a good fit to meet these requirements, and produced this diagram for engineering.
@@ -17,7 +17,6 @@ exampleorg has an IAC first policy, and its engineering team uses CDK with Types
 ### Breaking Down ( decomposing ) the problem with constructs: ##
 
 From the diagram,  three major parts that we can break the problem into are;
-
 
 - The cloudwan
 - The workloads
@@ -85,9 +84,9 @@ There are many familar parts to this construct, which were used in the creation 
 - A working aws-cli with a profile, that will will allow you to assume the cdk deployment roles.
 
 
-To create a sample Cloudwan project, clone this repo locally.
+To create a sample Cloudwan project, clone this repo locally.   Please read the instructions to the end before you start. 
 
-1. Open and Edit `\cdk.json`.  Modify lines 20-25 to reflect the regions, and account that you want to deploy to.  Optionally you can share your cloudwan if you want to share cloudwan via RAM.  In the following example, CDK will build a project that creats a cloud wan, in Singapore and Sydney, in account '12345678900', and will share it to the organisation o-123456789
+1. Open and Edit `\cdk.json`.  Modify lines 20-25 to reflect the regions, and account that you want to deploy to.  Optionally you can share your cloudwan if you want to share cloudwan via RAM.  In the following example, CDK will build a project that creates a cloud wan, in Singapore and Sydney, in account '12345678900', and will share it to the organisation o-123456789
 
 ```json
 "orgId": "o-123345567",
@@ -108,17 +107,50 @@ To create a sample Cloudwan project, clone this repo locally.
 
 `cdk deploy --all --require-approval never --profile <networkaccountprofile>`
 
+Note: this build takes between 50 and 60 minutes to complete,
+
 - 4.1 Alternatively you can deploy the stacks one at a time, This will give you the opportunity to build the network in pieces and observe what security changes are being made. 
   
  ```
  cdk ls
- deploy CloudwanCore --profile <networkaccountprofile>
+ cdk deploy CloudwanCore --profile <networkaccountprofile>
+ cdk deploy regionOneEgress --profile <networkaccountprofile>
+ cdk deploy regionTwoEgress --profile <networkaccountprofile>
+ cdk deploy RegionOneVPC --profile <networkaccountprofile>
+ cdk deply RegionTwoVPC --profile <networkaccountprofile>
  ```
 
-- 4.2 Deploy the VPC stacks, 
+### Testing and useage ###
 
-  `cdk deploy RegionOneVPC`
+We can test network connectivity between the webserver instances that were created.  Using the AWS Console, open the ec2 instance page, 
 
-  `cdk deploy RegionTwoVPC
+-- show instructions on how to connect to instance using ssm
 
-### Customization ###
+
+
+```
+[ssm-user@ip-10-100-4-138 bin]$ curl  green.ap-southeast-1.green.exampleorg.cloud
+<h1>This is green.ap-southeast-1.green.exampleorg.cloud</h1>
+[ssm-user@ip-10-100-4-138 bin]$ curl  blue.ap-southeast-1.blue.exampleorg.cloud
+<h1>This is blue.ap-southeast-1.blue.exampleorg.cloud</h1>
+[ssm-user@ip-10-100-4-138 bin]$ curl  green.ap-southeast-2.green.exampleorg.cloud
+<h1>This is green.ap-southeast-2.green.exampleorg.cloud</h1>
+[ssm-user@ip-10-100-4-138 bin]$ curl  blue.ap-southeast-2.blue.exampleorg.cloud
+<h1>This is blue.ap-southeast-2.blue.exampleorg.cloud</h1>
+[ssm-user@ip-10-100-4-138 bin]$ ping 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=49 time=94.3 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=49 time=93.5 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=49 time=93.4 ms
+^C
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+rtt min/avg/max/mdev = 93.465/93.772/94.350/0.540 ms
+[ssm-user@ip-10-100-4-138 bin]$ ^C
+[ssm-user@ip-10-100-4-138 bin]$ ^C
+[ssm-user@ip-10-100-4-138 bin]$
+```
+
+
+
+

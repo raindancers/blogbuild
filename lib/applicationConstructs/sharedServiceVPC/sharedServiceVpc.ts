@@ -26,16 +26,15 @@ export interface SharedServiceVpcProps {
    */
   connectToSegment: string;
   /**
-   * 
+   * which region will this deploy
    */
   region: string;
   /**
-  *
+  * This allows easy removal of buckets in non production environments. 
+  * This is not recommended for Production stacks.
+  * @default false
   */
   nonproduction?: boolean | undefined;
-  /**
-   * 
-   */
 }
 
 /**
@@ -53,17 +52,16 @@ export class SharedServiceVpc extends constructs.Construct {
    */
   resolverRole: iam.Role;
   /**
-   *
+   * the bucket where logs are created
    */
   loggingBucket: s3.Bucket;
 
   constructor(scope: constructs.Construct, id: string, props: SharedServiceVpcProps) {
     super(scope, id);
 
-    // We can optional flag that this is a non production environment. This will allow us to 
+    // We can optionaly flag that this is a non production environment. This will allow us to 
     // delete s3 log objects when we destroy the stacks.  In a production environment protecting the 
     // logs is important. 
-
     if ((props.nonproduction ?? false)) {     
 
       this.loggingBucket = new s3.Bucket(this, "loggingbucket", {
@@ -152,12 +150,6 @@ export class SharedServiceVpc extends constructs.Construct {
     });
 
 
-    // DNS can and is commonly used as an 'out of band' data path for Malware command/control and Data Exfiltration attacks. 
-    // DNS firewall provides some protection against these attacks.  This method will turn on a set of Managed Rules to help mitigate this threat. 
-    // using AWS DNS Firewall.
-
-    //sharedServiceVpc.attachAWSManagedDNSFirewallRules();
-
     // In this 'shared' service vpc, We add a selection of AWS service Endpoints, which
     // can be reached not only in this vpc, but the other vpcs that are attached to the cloudwan.
     // This can be helpful where a vpc needs infrequent to moderate access to a service. Consideration
@@ -170,8 +162,7 @@ export class SharedServiceVpc extends constructs.Construct {
     })
 
    
-
-     // This method, will add Routes in the specifed Cloudwan Routing tables towards the Cloudwan Attachment for this Vpc.
+    // This method, will add Routes in the specifed Cloudwan Routing tables towards the Cloudwan Attachment for this Vpc.
     // In this network, we want all our cloudwan segments to be able to reach the internet, via our shared egress
 
     const tableArn = new network.CrossRegionParameterReader(this, 'tableArn', {
@@ -187,8 +178,6 @@ export class SharedServiceVpc extends constructs.Construct {
       coreName: props.corenetwork,
       attachmentId: attachmentId,
     });
-
-
 
     // each subnet in each SubnetGroup, have its own routing table, ( this comes from the design of the ec2.Vpc ).
     // the .router() method provides a simple way to add add routes, in a 'route table' fashion. 
@@ -224,7 +213,6 @@ export class SharedServiceVpc extends constructs.Construct {
     // This forms part of the infrastructure that will allow hosts in different VPC's to resolve hosts in other VPC's by name.
     sharedServiceVpc.addR53Resolvers(endpoints)
 
-  
 
     // We want vpcs attached to the the Cloudwan, to be able to resolve the Zones of other vpcs. This method creates resolver rules which
     // are shared  and these can be assocated with each of the vpcs attached.
