@@ -4,8 +4,20 @@ import {
   aws_networkmanager as networkmanager,
 } from "aws-cdk-lib";
 import * as network from "raindancers-network";
+import { AwsRegions } from "raindancers-network";
 
+export interface EdgeLocation{
+  location: AwsRegions
+}
 
+export interface CloudWanCoreProps extends cdk.StackProps {
+  
+  cneRegions: AwsRegions[],
+  coreName: string;
+  asnRanges: string[],
+  insideCidrBlocks: string[]
+  
+}
 /**
  * Creates a Global Network which contains a Cloudwan Core Network
  * The class `CloudWanCore` defines a Global Network, in which the corenetwork is created. Parameters for the core network,
@@ -40,13 +52,25 @@ export class CloudWanCore extends cdk.Stack {
    * the greenSegment of the CoreWan
    */
   public readonly greenSegment: network.CoreNetworkSegment;
+  /**
+   * 
+   */
+  public readonly policyTableArn: string;
+  public readonly coreNetworkName: string;
 
-  constructor(scope: Construct, id: string, props: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: CloudWanCoreProps) {
     super(scope, id, props);
+
+    const edgeLocations: EdgeLocation[] = []; 
+    props.cneRegions.forEach((region) => {
+        edgeLocations.push({location: region})
+    })
 
     // create the core network
     this.corenetwork = new network.CoreNetwork(this, "CoreNetwork", {
-    
+
+      
+
       // The core network is included inside a Global network. 
       globalNetwork: new networkmanager.CfnGlobalNetwork(
         this,
@@ -56,29 +80,16 @@ export class CloudWanCore extends cdk.Stack {
         }
       ),
       policyDescription: "example net",
-      coreName: "exampleNet",
+      coreName: props.coreName, 
       // these asns are used to create the peering between Core Network Edge Locations (CNE). 
       // the range size should be at least as large as the number of CNE 
-      asnRanges: ["65200-65210"],
+      asnRanges: props.asnRanges,
       // This Cidr Range is used to number the links that will be created between CNE.This is
       // The ranges provided for each of the CNE's below must be subnets within this range
-      insideCidrBlocks: ["10.1.0.0/22"],
+      insideCidrBlocks: props.insideCidrBlocks,
 
       // A list of edge locations.  
-      edgeLocations: [
-        {
-          // region
-          location: this.node.tryGetContext("region1"),
-          asn: 65200,
-          "inside-cidr-blocks": ["10.1.0.0/24"],
-        },
-        {
-          // region2
-          location: this.node.tryGetContext("region2"), // getcontext
-          asn: 65201,
-          "inside-cidr-blocks": ["10.1.1.0/24"],
-        },
-      ],
+      edgeLocations: edgeLocations,
       // This is is an OptOut flag, which will not include backupVaults, and will S3 Buckets to be destroyed 
       // when the Stacks/App are removed destroyed.  It is ** HIGHLY ** recommended that for a production environment
       // that this property is removed. 
@@ -134,40 +145,8 @@ export class CloudWanCore extends cdk.Stack {
 
 
     this.corenetwork.updatePolicy();
-
+    this.policyTableArn = this.corenetwork.policyTable.tableArn;
+    this.coreNetworkName = props.coreName;
     
-    new network.CrossRegionParameterWriter(this, 'corenetworkname', {
-      value: this.corenetwork.coreName,
-      parameterName: 'ExampleNet-corenetworkname',
-      description: 'The name of the core network',
-    });
-
-    new network.CrossRegionParameterWriter(this, 'policyTablearn', {
-      value: this.corenetwork.policyTable.tableArn,
-      parameterName: 'ExampleNet-policyTableArn',
-      description: 'Policy Table Arn',
-    });
-
-    new network.CrossRegionParameterWriter(this, 'redSegmentName', {
-      value: this.redSegment.segmentName,
-      parameterName: 'ExampleNet-redSegmentName',
-      description: 'red segment name',
-    });
-
-    new network.CrossRegionParameterWriter(this, 'greenSegmentName', {
-      value: this.greenSegment.segmentName,
-      parameterName: 'ExampleNet-greenSegmentName',
-      description: 'green segment name',
-    });
-
-    new network.CrossRegionParameterWriter(this, 'blueSegmentName', {
-      value: this.blueSegment.segmentName,
-      parameterName: 'ExampleNet-blueSegmentName',
-      description: 'blue segment name',
-    });
-
-
-
-
   }
 }

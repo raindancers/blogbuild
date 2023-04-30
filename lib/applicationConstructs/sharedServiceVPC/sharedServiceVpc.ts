@@ -9,16 +9,14 @@ import {
 import * as network from "raindancers-network";
 
 export interface SharedServiceVpcProps {
+  loggingBucketName: string;
+  ipamPool: string;
   /**
    * The name for the VPC
    */
   vpcName: string;
   /**
    * A cidr range for the Vpc
-   */
-  vpcCidr: string;
-  /**
-   * The corenetwork which the VPC can be attached to.
    */
   corenetwork: string;
   /**
@@ -34,7 +32,6 @@ export interface SharedServiceVpcProps {
   * This is not recommended for Production stacks.
   * @default false
   */
-  nonproduction?: boolean | undefined;
 }
 
 /**
@@ -54,7 +51,6 @@ export class SharedServiceVpc extends constructs.Construct {
   /**
    * the bucket where logs are created
    */
-  loggingBucket: s3.Bucket;
 
   constructor(scope: constructs.Construct, id: string, props: SharedServiceVpcProps) {
     super(scope, id);
@@ -62,22 +58,7 @@ export class SharedServiceVpc extends constructs.Construct {
     // We can optionaly flag that this is a non production environment. This will allow us to 
     // delete s3 log objects when we destroy the stacks.  In a production environment protecting the 
     // logs is important. 
-    if ((props.nonproduction ?? false)) {     
-
-      this.loggingBucket = new s3.Bucket(this, "loggingbucket", {
-        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        autoDeleteObjects: false,
-        removalPolicy: cdk.RemovalPolicy.RETAIN
-      });
-    } else {
-      this.loggingBucket = new s3.Bucket(this, "loggingbucket", {
-        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        autoDeleteObjects: true,
-        removalPolicy: cdk.RemovalPolicy.DESTROY,
-      });
-    }
+    
 
 
     // Create an Enterprise Vpc.  This uses the 'EntepriseVpc' contruct from the raindancers-network library.
@@ -116,7 +97,10 @@ export class SharedServiceVpc extends constructs.Construct {
 
       // this  EntepriseVpc extends the standard ec2.Vpc from the cdk-lib. 
       evpc: {
-        ipAddresses: ec2.IpAddresses.cidr(props.vpcCidr),
+        ipAddresses: ec2.IpAddresses.awsIpamAllocation({
+          ipv4IpamPoolId: props.ipamPool,
+          ipv4NetmaskLength: 22,
+        }),
         maxAzs: 2,
         natGateways: 2,
         natGatewayProvider: natgateways,
@@ -136,7 +120,7 @@ export class SharedServiceVpc extends constructs.Construct {
     // which will provide a convient way to search the logs. 
 
     sharedServiceVpc.createFlowLog({
-      bucket: this.loggingBucket,
+      bucket: s3.Bucket.fromBucketName(this, 'loggingBucket', props.loggingBucketName),
       localAthenaQuerys: true,
       oneMinuteFlowLogs: true,
     });

@@ -20,9 +20,9 @@
     "typescript": "~4.9.4"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.70.0",
+    "aws-cdk-lib": "^2.77.0",
     "constructs": "^10.0.0",
-    "raindancers-network": "1.25.0",
+    "raindancers-network": "^1.26.1",
     "source-map-support": "^0.5.21"
   }
 }

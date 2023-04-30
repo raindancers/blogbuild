@@ -28,5 +28,23 @@
     "ap-southeast-1a",
     "ap-southeast-1b",
     "ap-southeast-1c"
+  ],
+  "availability-zones:account=847997321372:region=us-west-1": [
+    "us-west-1b",
+    "us-west-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=us-west-1:serviceName=com.amazonaws.us-west-1.ssm": [
+    "us-west-1b",
+    "us-west-1c"
+  ],
+  "availability-zones:account=847997321372:region=eu-west-1": [
+    "eu-west-1a",
+    "eu-west-1b",
+    "eu-west-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=eu-west-1:serviceName=com.amazonaws.eu-west-1.ssm": [
+    "eu-west-1a",
+    "eu-west-1b",
+    "eu-west-1c"
   ]
 }

@@ -5,7 +5,7 @@ import * as network from "raindancers-network";
 import { WorkLoadVpc } from "../../applicationConstructs/workloadVPC/workLoadVpc";
 
 
-interface RegionOneProps extends cdk.StackProps {
+interface WorkLoadsProps extends cdk.StackProps {
   /**
    * The coreNetwork the vpcs will be attached to
    */
@@ -21,12 +21,16 @@ interface RegionOneProps extends cdk.StackProps {
   /**
    * S3 bucket for Logging VPC flows
    */
-  loggingbucket: s3.Bucket;
+  loggingbucketName: string;
+
+  regions: network.AwsRegions[];
+
+  ipamPool: string;
   
 }
 
-export class RegionOneWorkLoads extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: RegionOneProps) {
+export class WorkLoads extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: WorkLoadsProps) {
     super(scope, id, props);
 
     /**
@@ -34,26 +38,22 @@ export class RegionOneWorkLoads extends cdk.Stack {
      * the webserver 'green.<region1>.exampleorg.cloud'
      */
     new WorkLoadVpc(this, "GreenVpc", {
-      vpcCidr: "10.100.4.0/22",
+      regions: props.regions,
+      ipamPool: props.ipamPool,
       vpcName: "green",
       corenetwork: props.corenetwork,
       connectToSegment: props.greenSegment,
-      loggingBucket: props.loggingbucket,
+      loggingBucketName: props.loggingbucketName,
       region: this.region
     });
 
-
-
-    /**
-     * Create a VPC that is attached to the blue segment and contains a
-     * the webserver 'blue.<region1>.exampleorg.cloud'
-     */
     new WorkLoadVpc(this, "BlueVpc", {
-      vpcCidr: "10.100.8.0/22",
+      regions: props.regions,
+      ipamPool: props.ipamPool,
       vpcName: "blue",
       corenetwork: props.corenetwork,
       connectToSegment: props.blueSegment,
-      loggingBucket: props.loggingbucket,
+      loggingBucketName: props.loggingbucketName,
       region: this.region,
     });
   }

@@ -1,9 +1,13 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { aws_s3 as s3, aws_iam as iam } from "aws-cdk-lib";
+import { aws_s3 as s3, aws_iam as iam, aws_ec2 as ec2 } from "aws-cdk-lib";
 import { SharedServiceVpc } from "../../applicationConstructs/sharedServiceVPC/sharedServiceVpc";
 
-interface RegionTwoProps extends cdk.StackProps {
+interface CentralVpcProps extends cdk.StackProps {
+
+  readonly region: string;
+  readonly ipamPool: string;
+  readonly loggingBucketName: string
   /**
    * the corenetwork that the vpc will be attached to
    */
@@ -17,37 +21,33 @@ interface RegionTwoProps extends cdk.StackProps {
 /**
  * Create a stack that contains a sharedserviceVPC
  */
-export class RegionTwoCentralVpc extends cdk.Stack {
-  /**
-   * The VPC logging bucket for the region
-   */
-  loggingBucket: s3.Bucket;
+export class CentralVpc extends cdk.Stack {
   /**
    * CentralVpcID
    */
-  centralVpcId: string;
+  centralVpc: ec2.Vpc;
   /**
    * Role to Assume for associating r53Zones
    */
   resolverRole: iam.Role;
 
-  constructor(scope: Construct, id: string, props: RegionTwoProps) {
+  constructor(scope: Construct, id: string, props: CentralVpcProps) {
     super(scope, id, props);
 
     const redVpc = new SharedServiceVpc(this, "SharedServiceVPC", {
-      vpcCidr: "10.200.0.0/22",
+      ipamPool: props.ipamPool,
+      loggingBucketName: props.loggingBucketName,
       vpcName: "red",
       corenetwork: props.corenetwork,
       connectToSegment: props.redSegment,
-      region: this.node.tryGetContext("region2"),
+      region: props.region,
       // this is an opt-out flag, that should be removed if this stack is used for production 
       // workloads.   Setting to true, will result in logs from vpc flow logs being deleted
       // automatically when the stack is destroy.
-      nonproduction: true,
     });
 
-    this.centralVpcId = redVpc.vpc.vpcId;
+    this.centralVpc = redVpc.vpc;
     this.resolverRole = redVpc.resolverRole;
-    this.loggingBucket = redVpc.loggingBucket;
+    
   }
 }

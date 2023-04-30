@@ -7,15 +7,15 @@ import {
 import { WebServer } from "../webserver/webServer";
 import * as network from "raindancers-network";
 
+export interface HubZone {
+  region: network.AwsRegions
+}
+
 export interface WorkLoadVpcProps {
   /**
    * Name for the vpc
    */
   readonly vpcName: string;
-  /**
-   * Cidr range for the VPC
-   */
-  readonly vpcCidr: string;
   /**
    * The cloudwan Corenetwork which the vpc will be attached to
    */
@@ -27,11 +27,17 @@ export interface WorkLoadVpcProps {
   /**
    * A bucket for Logging
    */
-  readonly loggingBucket: s3.Bucket;
+  readonly loggingBucketName: string;
   /**
    * region for creating the domain
    */
   readonly region: string;
+  /**
+   * 
+   */
+  readonly ipamPool: string;
+
+  readonly regions: network.AwsRegions[]
 }
 
 /**
@@ -61,12 +67,16 @@ export class WorkLoadVpc extends constructs.Construct {
     // create the vpc.
     const vpc = new network.EnterpriseVpc(this, "WorkloadEvpc", {
       evpc: {
-        ipAddresses: ec2.IpAddresses.cidr(props.vpcCidr),
+        ipAddresses: ec2.IpAddresses.awsIpamAllocation({
+          ipv4IpamPoolId: props.ipamPool,
+          ipv4NetmaskLength: 22,
+        }),
         maxAzs: 2,
         natGateways: 0,
         subnetConfiguration: [
           linknet.subnet,
-          workloads.subnet],
+          workloads.subnet
+        ],
       },
     });
 
@@ -75,7 +85,7 @@ export class WorkLoadVpc extends constructs.Construct {
      * which will provide a convient way to search the logs.
      */
     vpc.createFlowLog({
-      bucket: props.loggingBucket,
+      bucket: s3.Bucket.fromBucketName(this, "flowlogBucket", props.loggingBucketName),
       localAthenaQuerys: true,
       oneMinuteFlowLogs: true,
     });
@@ -121,12 +131,15 @@ export class WorkLoadVpc extends constructs.Construct {
      * Create a Local R53 Zone for this vpc, and additionally associate it with the central resolver vpcs, to allow
      * cross vpc resolution across the cloudwan.
      */
+
+    const hubRegions: HubZone[] = []
+    props.regions.forEach((otherregion) => {
+      hubRegions.push({region: otherregion})
+    });
+
     const zone = vpc.createAndAttachR53EnterprizeZone({
       domainname: `${props.region}.${props.vpcName}.${this.node.tryGetContext("domain")}`,
-      hubVpcs: [
-        { region: this.node.tryGetContext("region1") },
-        { region: this.node.tryGetContext("region2") },
-      ],
+      hubVpcs: hubRegions
     });
 
     /**
