@@ -1,3 +1,4 @@
+import * as cdk from "aws-cdk-lib";
 import * as constructs from "constructs";
 import { 
   aws_ec2 as ec2,
@@ -6,6 +7,7 @@ import {
 
 import { WebServer } from "../webserver/webServer";
 import * as network from "raindancers-network";
+import { FindPool } from "../ipam/findpool";
 
 export interface HubZone {
   region: network.AwsRegions
@@ -25,18 +27,13 @@ export interface WorkLoadVpcProps {
    */
   readonly connectToSegment: string;
   /**
-   * A bucket for Logging
-   */
-  readonly loggingBucketName: string;
-  /**
    * region for creating the domain
    */
   readonly region: string;
   /**
    * 
    */
-  readonly ipamPool: string;
-
+  
   readonly regions: network.AwsRegions[]
 }
 
@@ -64,11 +61,17 @@ export class WorkLoadVpc extends constructs.Construct {
       cidrMask: 28,
     });
 
+    const findpool = new cdk.CustomResource(this, `delayresource`, {
+      serviceToken: new FindPool(this, 'FindPool', {
+        descriptonSearch: 'earthIPAMPool',
+      }).serviceToken,
+    })
+
     // create the vpc.
     const vpc = new network.EnterpriseVpc(this, "WorkloadEvpc", {
       evpc: {
         ipAddresses: ec2.IpAddresses.awsIpamAllocation({
-          ipv4IpamPoolId: props.ipamPool,
+          ipv4IpamPoolId: findpool.getAttString('IpamPoolId'),
           ipv4NetmaskLength: 22,
         }),
         maxAzs: 2,
@@ -84,11 +87,6 @@ export class WorkLoadVpc extends constructs.Construct {
      * logged in a central S3 Bucket.  THis is a convience method to do this, and additionally create athena querys
      * which will provide a convient way to search the logs.
      */
-    vpc.createFlowLog({
-      bucket: s3.Bucket.fromBucketName(this, "flowlogBucket", props.loggingBucketName),
-      localAthenaQuerys: true,
-      oneMinuteFlowLogs: true,
-    });
 
     /**
      * the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan

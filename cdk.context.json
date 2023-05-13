@@ -46,5 +46,43 @@
     "eu-west-1a",
     "eu-west-1b",
     "eu-west-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=us-west-1:serviceName=com.amazonaws.us-west-1.ec2": [
+    "us-west-1b",
+    "us-west-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=us-west-1:serviceName=com.amazonaws.us-west-1.ssmmessages": [
+    "us-west-1b",
+    "us-west-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=ap-southeast-1:serviceName=com.amazonaws.ap-southeast-1.ec2": [
+    "ap-southeast-1a",
+    "ap-southeast-1b",
+    "ap-southeast-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=ap-southeast-1:serviceName=com.amazonaws.ap-southeast-1.ssmmessages": [
+    "ap-southeast-1a",
+    "ap-southeast-1b",
+    "ap-southeast-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=ap-southeast-2:serviceName=com.amazonaws.ap-southeast-2.ec2": [
+    "ap-southeast-2a",
+    "ap-southeast-2b",
+    "ap-southeast-2c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=ap-southeast-2:serviceName=com.amazonaws.ap-southeast-2.ssmmessages": [
+    "ap-southeast-2a",
+    "ap-southeast-2b",
+    "ap-southeast-2c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=eu-west-1:serviceName=com.amazonaws.eu-west-1.ec2": [
+    "eu-west-1a",
+    "eu-west-1b",
+    "eu-west-1c"
+  ],
+  "endpoint-service-availability-zones:account=847997321372:region=eu-west-1:serviceName=com.amazonaws.eu-west-1.ssmmessages": [
+    "eu-west-1a",
+    "eu-west-1b",
+    "eu-west-1c"
   ]
 }

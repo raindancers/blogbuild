@@ -7,10 +7,11 @@ import {
   aws_iam as iam,
 } from "aws-cdk-lib";
 import * as network from "raindancers-network";
+import { FindPool } from "../ipam/findpool";
+import { CfnKey } from "aws-cdk-lib/aws-kms";
+
 
 export interface SharedServiceVpcProps {
-  loggingBucketName: string;
-  ipamPool: string;
   /**
    * The name for the VPC
    */
@@ -32,6 +33,7 @@ export interface SharedServiceVpcProps {
   * This is not recommended for Production stacks.
   * @default false
   */
+  tableArn: string;
 }
 
 /**
@@ -92,13 +94,19 @@ export class SharedServiceVpc extends constructs.Construct {
     const outside = new network.SubnetGroup(this, 'outside', {name: 'outside', subnetType: ec2.SubnetType.PUBLIC, cidrMask: 28});
     const endpoints = new network.SubnetGroup(this, 'endpoints', {name: 'endpoints', subnetType: ec2.SubnetType.PRIVATE_ISOLATED, cidrMask: 24});
 
+    const findpool = new cdk.CustomResource(this, `delayresource`, {
+      serviceToken: new FindPool(this, 'FindPool', {
+        descriptonSearch: 'earthIPAMPool',
+      }).serviceToken,
+    })
+
     // create the VPC, using the natgateways, and subnets 
     const sharedServiceVpc = new network.EnterpriseVpc(this, "redEvpc", {
 
       // this  EntepriseVpc extends the standard ec2.Vpc from the cdk-lib. 
       evpc: {
         ipAddresses: ec2.IpAddresses.awsIpamAllocation({
-          ipv4IpamPoolId: props.ipamPool,
+          ipv4IpamPoolId: findpool.getAttString('poolId'),
           ipv4NetmaskLength: 22,
         }),
         maxAzs: 2,
@@ -119,12 +127,6 @@ export class SharedServiceVpc extends constructs.Construct {
     // logged in a central S3 Bucket.  THis is a convience method to do this, and additionally create athena querys
     // which will provide a convient way to search the logs. 
 
-    sharedServiceVpc.createFlowLog({
-      bucket: s3.Bucket.fromBucketName(this, 'loggingBucket', props.loggingBucketName),
-      localAthenaQuerys: true,
-      oneMinuteFlowLogs: true,
-    });
-
 
     // the method .attachToCloudwan attaches the sharedService Enterprise VPC to the the Cloudwan
     // on a specfic segment. Remember that the cloudwan policy must allow the attachment.
@@ -141,7 +143,11 @@ export class SharedServiceVpc extends constructs.Construct {
     // it may be more appropriate to add an endpoint in the vpc
 
     sharedServiceVpc.addServiceEndpoints({
-      services: [ec2.InterfaceVpcEndpointAwsService.SSM],
+      services: [
+        ec2.InterfaceVpcEndpointAwsService.SSM,
+        ec2.InterfaceVpcEndpointAwsService.EC2,
+        ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES
+      ],
       subnetGroup: endpoints
     })
 
@@ -149,13 +155,9 @@ export class SharedServiceVpc extends constructs.Construct {
     // This method, will add Routes in the specifed Cloudwan Routing tables towards the Cloudwan Attachment for this Vpc.
     // In this network, we want all our cloudwan segments to be able to reach the internet, via our shared egress
 
-    const tableArn = new network.CrossRegionParameterReader(this, 'tableArn', {
-      region: 'us-east-1',
-      parameterName: 'ExampleNet-policyTableArn'
-    })
 
     sharedServiceVpc.addCoreRoutes({
-      policyTableArn: tableArn.parameterValue(),
+      policyTableArn: props.tableArn,
       segments: ["red", "green", "blue"],
       destinationCidrBlocks: ["0.0.0.0/0"],
       description: "defaultroutetoEgress",

@@ -21,11 +21,8 @@ interface WorkLoadsProps extends cdk.StackProps {
   /**
    * S3 bucket for Logging VPC flows
    */
-  loggingbucketName: string;
 
   regions: network.AwsRegions[];
-
-  ipamPool: string;
   
 }
 
@@ -39,21 +36,17 @@ export class WorkLoads extends cdk.Stack {
      */
     new WorkLoadVpc(this, "GreenVpc", {
       regions: props.regions,
-      ipamPool: props.ipamPool,
       vpcName: "green",
       corenetwork: props.corenetwork,
       connectToSegment: props.greenSegment,
-      loggingBucketName: props.loggingbucketName,
       region: this.region
     });
 
     new WorkLoadVpc(this, "BlueVpc", {
       regions: props.regions,
-      ipamPool: props.ipamPool,
       vpcName: "blue",
       corenetwork: props.corenetwork,
       connectToSegment: props.blueSegment,
-      loggingBucketName: props.loggingbucketName,
       region: this.region,
     });
   }

@@ -10,30 +10,29 @@ import { AwsRegions } from 'raindancers-network'
 
 const app = new cdk.App();
 
-/**
- *  Create a Stack that creates a CloudWan, that spans two regions,
- * with three segments, red, green, blue.  THese need to be deployed
- * in us-east-1
- **/
-
-//https://docs.aws.amazon.com/network-manager/latest/cloudwan/what-is-cloudwan.html#cloudwan-available-regions
-const exampleNetRegions = [
-  AwsRegions.US_WEST_1,
-  // AwsRegions.US_WEST_2,
-  // AwsRegions.US_EAST_1,
-  // AwsRegions.US_EAST_2,
-  AwsRegions.AP_SOUTHEAST_1,
-  AwsRegions.AP_SOUTHEAST_2,  
-  // AwsRegions.AP_SOUTH_1,
-  // AwsRegions.AP_NORTHEAST_1,
-  // AwsRegions.AP_NORTHEAST_2,
-  // AwsRegions.CA_CENTRAL_1,
-  // AwsRegions.EU_CENTRAL_1,
-  AwsRegions.EU_WEST_1,
-  // AwsRegions.EU_WEST_2,
-  // AwsRegions.EU_WEST_3,
-  // AwsRegions.EU_NORTH_1,
+const globalWan = [
+  { 
+    region: AwsRegions.US_WEST_1,
+    ipamPoolCidr: '10.10.0.0/20'
+  },
+  { 
+    region: AwsRegions.AP_SOUTHEAST_1,
+    ipamPoolCidr: '10.10.16.0/20'
+  },
+  { 
+    region: AwsRegions.AP_SOUTHEAST_2,
+    ipamPoolCidr: '10.10.32.0/20'
+  },
+  { 
+    region: AwsRegions.EU_WEST_1,
+    ipamPoolCidr: '10.10.48.0/20'
+  },
 ]
+
+const globalWanRegions: AwsRegions[] = [];
+globalWan.forEach((region) => {
+  globalWanRegions.push(region.region);
+})
 
 // build the CoreWan
 const core = new CloudWanCore(app, "CloudwanCore", {
@@ -41,7 +40,7 @@ const core = new CloudWanCore(app, "CloudwanCore", {
     account: app.node.tryGetContext("networkAccount"),
     region: AwsRegions.US_EAST_1,
   },
-  cneRegions: exampleNetRegions,
+  cneRegions: globalWanRegions,
   coreName: 'exampleNet',
   asnRanges: ["65200-65232"],
   insideCidrBlocks: ["10.255.0.0/19"],
@@ -54,13 +53,12 @@ const supportInfra = new SupportInfra(app, 'ipam', {
     account: app.node.tryGetContext("networkAccount"),
     region: AwsRegions.US_EAST_1,
   },
-  regions: exampleNetRegions,
-  superNet: '10.10.0.0/16',
+  regions: globalWan,
   crossRegionReferences: true,
 })
 
 // deploy central zones in each region
-exampleNetRegions.forEach((region) => {
+globalWanRegions.forEach((region) => {
 
   new CentralVpc(app, `${region}-centralVPC`, {
     env: { 
@@ -70,13 +68,12 @@ exampleNetRegions.forEach((region) => {
     region: region,
     corenetwork: core.corenetwork.coreName,
     redSegment: core.redSegment.segmentName,
-    ipamPool: supportInfra.ipamPool,
-    loggingBucketName: supportInfra.loggingBucketName,
-    crossRegionReferences: true
+    crossRegionReferences: true,
+    tableArn: core.policyTableArn
   })
 })
 
-exampleNetRegions.forEach((region) => {
+globalWanRegions.forEach((region) => {
 
   new WorkLoads(app, `${region}-workloadVPC`, {
     env: { 
@@ -86,9 +83,7 @@ exampleNetRegions.forEach((region) => {
     corenetwork: core.corenetwork.coreName,
     greenSegment: core.greenSegment.segmentName,
     blueSegment: core.blueSegment.segmentName,
-    loggingbucketName: supportInfra.loggingBucketName,
-    regions: exampleNetRegions,
-    ipamPool: supportInfra.ipamPool,
+    regions: globalWanRegions,
     crossRegionReferences: true
   })
 })
