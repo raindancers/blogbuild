@@ -157,7 +157,11 @@ export class SharedServiceVpc extends constructs.Construct {
     // it may be more appropriate to add an endpoint in the vpc
 
     sharedServiceVpc.addServiceEndpoints({
-      services: [ec2.InterfaceVpcEndpointAwsService.SSM],
+      services: [
+        ec2.InterfaceVpcEndpointAwsService.SSM,
+        ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES,
+        ec2.InterfaceVpcEndpointAwsService.EC2_MESSAGES,
+      ],
       subnetGroup: endpoints
     })
 
